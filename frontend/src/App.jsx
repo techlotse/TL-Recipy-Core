@@ -143,6 +143,14 @@ function LlmUsageCard({ usage }) {
           <span>Estimated cost</span>
           <strong>{moneyLabel(usage.totalCostUsd)}</strong>
         </div>
+        {usage.imageCount > 0 && (
+          <div>
+            <span>Step images</span>
+            <strong>
+              {numberLabel(usage.imageCount)} · {moneyLabel(usage.imageCostUsd)}
+            </strong>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -407,7 +415,10 @@ function RecipeDetailPage({ id }) {
           <h2>Method</h2>
           <ol className="step-list">
             {recipe.steps.map((step, index) => (
-              <li key={`${step.text}-${index}`}>{step.text}</li>
+              <li className={step.imageUrl ? 'illustrated-step' : ''} key={`${step.text}-${index}`}>
+                {step.imageUrl && <img src={step.imageUrl} alt="" loading="lazy" />}
+                <span>{step.text}</span>
+              </li>
             ))}
           </ol>
         </section>
@@ -796,6 +807,7 @@ function AddRecipePage({ recipeId = null }) {
 function ImportPage() {
   const [url, setUrl] = useState('');
   const [mode, setMode] = useState('verbatim');
+  const [createToddlerVersion, setCreateToddlerVersion] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [warnings, setWarnings] = useState([]);
@@ -806,7 +818,11 @@ function ImportPage() {
     setError('');
     setWarnings([]);
     try {
-      const result = await api.importUrl({ url, mode });
+      const result = await api.importUrl({
+        url,
+        mode,
+        createToddlerVersion: mode === 'ai' && createToddlerVersion
+      });
       setWarnings(result.warnings || []);
       navigate(`/recipes/${result.recipe.id}`);
     } catch (err) {
@@ -834,7 +850,10 @@ function ImportPage() {
           <button
             className={`option-card ${mode === 'verbatim' ? 'selected' : ''}`}
             type="button"
-            onClick={() => setMode('verbatim')}
+            onClick={() => {
+              setMode('verbatim');
+              setCreateToddlerVersion(false);
+            }}
           >
             <LinkIcon size={22} />
             <strong>Verbatim import</strong>
@@ -850,6 +869,17 @@ function ImportPage() {
             <span>Normalize structure, remove story content, and convert units to metric.</span>
           </button>
         </div>
+
+        {mode === 'ai' && (
+          <label className="toggle-row toddler-toggle">
+            <input
+              type="checkbox"
+              checked={createToddlerVersion}
+              onChange={(event) => setCreateToddlerVersion(event.target.checked)}
+            />
+            <span>Create toddler helper version with AI step images</span>
+          </label>
+        )}
 
         {error && <div className="state error">{error}</div>}
         {warnings.map((warning) => (

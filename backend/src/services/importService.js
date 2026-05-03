@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 import { badRequest } from '../errors.js';
 import { createRecipe } from './recipeStore.js';
-import { normalizeRecipeWithOpenAi } from './aiService.js';
+import { createToddlerRecipeWithOpenAi, normalizeRecipeWithOpenAi } from './aiService.js';
 import { parseDurationToMinutes } from '../utils/duration.js';
 import { uniqueStrings } from '../utils/slug.js';
 import { recipeInputSchema } from '../validation.js';
@@ -201,9 +201,13 @@ export async function fetchRecipePage(url) {
   return response.text();
 }
 
-export async function importRecipeFromUrl({ url, mode }) {
+export async function importRecipeFromUrl({ url, mode, createToddlerVersion = false }) {
   const html = await fetchRecipePage(url);
   const { extracted, sourceText } = extractRecipeFromHtml(html, url);
+  if (createToddlerVersion && mode !== 'ai') {
+    throw badRequest('Toddler helper recipes are only available for AI-assisted imports');
+  }
+
   const input =
     mode === 'ai'
       ? await normalizeRecipeWithOpenAi({ sourceUrl: url, extracted, sourceText }).then((result) => ({
@@ -213,12 +217,28 @@ export async function importRecipeFromUrl({ url, mode }) {
       : buildVerbatimRecipe({ extracted, sourceText, sourceUrl: url });
 
   const recipe = await createRecipe(input);
+  let toddlerRecipe = null;
+  const toddlerWarnings = [];
+
+  if (mode === 'ai' && createToddlerVersion) {
+    try {
+      const toddlerResult = await createToddlerRecipeWithOpenAi({ sourceRecipe: recipe, sourceUrl: url });
+      toddlerRecipe = await createRecipe(toddlerResult.recipe);
+      toddlerWarnings.push(...toddlerResult.warnings);
+    } catch (error) {
+      toddlerWarnings.push(`Toddler helper recipe was not created: ${error.message}`);
+    }
+  }
+
   return {
     recipe,
+    toddlerRecipe,
     importMode: mode,
-    warnings:
-      mode === 'verbatim' && (!extracted.ingredients?.length || !extracted.steps?.length)
+    warnings: [
+      ...(mode === 'verbatim' && (!extracted.ingredients?.length || !extracted.steps?.length)
         ? ['Some fields could not be extracted automatically. The original source URL was preserved.']
-        : []
+        : []),
+      ...toddlerWarnings
+    ]
   };
 }

@@ -1,7 +1,7 @@
 # TL Recipe Core
 
 [![CI](https://github.com/Techlotse/TL-Recipy-Core/actions/workflows/ci.yml/badge.svg)](https://github.com/Techlotse/TL-Recipy-Core/actions/workflows/ci.yml)
-![Version](https://img.shields.io/badge/version-0.4.2-00d1b2)
+![Version](https://img.shields.io/badge/version-0.5.0-00d1b2)
 ![Docker build](https://img.shields.io/badge/docker-build%20in%20CI-a6e22e)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 
@@ -13,6 +13,7 @@ TL Recipe Core is a dark-mode-first internal recipe manager for saving, importin
 - Full recipe detail pages with ingredients, method, source URL, and metadata.
 - Wizard-based manual recipe creation.
 - URL import with verbatim extraction or ChatGPT-processed normalization.
+- Optional toddler-helper AI import that creates a second supervised recipe with generated step images.
 - AI processing prompt path for metric conversion, Celsius temperatures, and JSON output before saving.
 - AI import usage metrics with model, tokens, response time, and cost snapshot.
 - Recipe editing.
@@ -78,12 +79,13 @@ docker compose up
 | --- | --- | --- |
 | `PORT` | `8080` | HTTP port inside the app container. |
 | `APP_PORT` | `8080` | Host port exposed by Docker Compose. Change this if `8080` is already in use. |
-| `DOCKER_IMAGE` | `techlotse/tl-recipe-core:v0.4.2` | Published image used by `docker-compose.yml`. |
+| `DOCKER_IMAGE` | `techlotse/tl-recipe-core:v0.5.0` | Published image used by `docker-compose.yml`. |
 | `DATABASE_URL` | Compose PostgreSQL URL | Backend database connection string. |
 | `APP_SECRET` | development fallback | Encrypts stored API keys. Set this before real use. |
 | `SEED_SAMPLE_DATA` | `true` | Inserts sample recipes when the database is empty. |
 | `OPENAI_API_KEY` | empty | Optional server-side OpenAI key. Overrides DB-stored key. |
 | `OPENAI_MODEL` | `gpt-5.4-nano` | Fallback model used for AI recipe normalization. |
+| `OPENAI_IMAGE_MODEL` | `gpt-image-1` | Image model used for toddler helper step illustrations. |
 | `OPENAI_BASE_URL` | `https://api.openai.com/v1` | API base URL for OpenAI-compatible deployments. |
 
 ## OpenAI API Key Setup

@@ -1,6 +1,6 @@
 {
   "name": "tl-recipe-core",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "private": true,
   "description": "TL Recipe Core - internal recipe manager MVP",
   "type": "module",

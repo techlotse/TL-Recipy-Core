@@ -444,6 +444,20 @@ h3 {
   margin-top: 0.65rem;
 }
 
+.illustrated-step {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.illustrated-step img {
+  width: min(100%, 18rem);
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #0d131b;
+}
+
 .ingredient-list span {
   display: block;
   color: var(--muted);
@@ -789,6 +803,13 @@ h3 {
   min-height: 2.75rem;
   color: var(--soft);
   font-weight: 650;
+}
+
+.toddler-toggle {
+  padding: 0.75rem;
+  border: 1px solid rgba(166, 226, 46, 0.28);
+  border-radius: 8px;
+  background: rgba(166, 226, 46, 0.08);
 }
 
 .toggle-row input {

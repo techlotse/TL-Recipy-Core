@@ -16,7 +16,8 @@ The recipe opens automatically after saving.
 1. Open `Import from URL`.
 2. Paste the recipe page URL.
 3. Choose `Verbatim import` or `ChatGPT processed import`.
-4. Select `Import recipe`.
+4. If using `ChatGPT processed import`, optionally enable `Create toddler helper version with AI step images`.
+5. Select `Import recipe`.
 
 The app fetches the page on the backend, extracts recipe metadata where possible, and saves the result to the database.
 
@@ -27,6 +28,8 @@ The app fetches the page on the backend, extracts recipe metadata where possible
 `ChatGPT processed import` sends the extracted recipe content to the configured OpenAI API. It asks the model to remove blog/story content, normalize the recipe into the TL Recipe Core structure, convert units to metric, keep temperatures in Celsius, and return structured JSON before saving.
 
 If AI processing fails, the app shows an error and does not create a partial recipe.
+
+When the toddler helper option is enabled, TL Recipe Core first imports the normal AI-processed recipe. It then creates a second supervised toddler-friendly helper recipe with short safe steps and one generated image per step. Toddler helper recipes are designed for adult-supervised participation and avoid toddler tasks involving knives, heat, boiling water, raw meat, or appliance operation.
 
 ## Metric Conversion
 

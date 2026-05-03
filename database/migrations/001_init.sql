@@ -20,6 +20,9 @@ CREATE TABLE IF NOT EXISTS recipes (
   llm_output_price_per_million_usd NUMERIC(12,6) NULL,
   llm_input_cost_usd NUMERIC(12,6) NULL,
   llm_output_cost_usd NUMERIC(12,6) NULL,
+  llm_image_model TEXT NULL,
+  llm_image_count INTEGER NULL CHECK (llm_image_count IS NULL OR llm_image_count >= 0),
+  llm_image_cost_usd NUMERIC(12,6) NULL,
   llm_total_cost_usd NUMERIC(12,6) NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

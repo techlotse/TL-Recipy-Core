@@ -22,7 +22,9 @@ export const ingredientSchema = z.object({
 });
 
 export const stepSchema = z.object({
-  text: z.string().trim().min(1, 'Step text is required')
+  text: z.string().trim().min(1, 'Step text is required'),
+  imageUrl: optionalUrl,
+  imagePrompt: z.string().trim().optional().default('')
 });
 
 const tagInputSchema = z
@@ -57,6 +59,9 @@ export const recipeInputSchema = z.object({
       outputPricePerMillionUsd: z.number().nonnegative().nullable().optional(),
       inputCostUsd: z.number().nonnegative().nullable().optional(),
       outputCostUsd: z.number().nonnegative().nullable().optional(),
+      imageModel: z.string().trim().optional().default(''),
+      imageCount: z.number().int().nonnegative().nullable().optional(),
+      imageCostUsd: z.number().nonnegative().nullable().optional(),
       totalCostUsd: z.number().nonnegative().nullable().optional()
     })
     .nullable()
@@ -65,7 +70,8 @@ export const recipeInputSchema = z.object({
 
 export const importRequestSchema = z.object({
   url: z.string().trim().url('Enter a valid recipe URL'),
-  mode: z.enum(['verbatim', 'ai'])
+  mode: z.enum(['verbatim', 'ai']),
+  createToddlerVersion: z.boolean().optional().default(false)
 });
 
 export const settingsInputSchema = z.object({
