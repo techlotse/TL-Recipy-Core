@@ -61,6 +61,15 @@ function numberLabel(value) {
   return new Intl.NumberFormat('en').format(value || 0);
 }
 
+function moneyLabel(value) {
+  return new Intl.NumberFormat('en', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 6
+  }).format(value || 0);
+}
+
 function tagNames(recipe) {
   return (recipe.tags || []).map((tag) => (typeof tag === 'string' ? tag : tag.name));
 }
@@ -129,6 +138,10 @@ function LlmUsageCard({ usage }) {
         <div>
           <span>Response time</span>
           <strong>{numberLabel(usage.responseMs)} ms</strong>
+        </div>
+        <div>
+          <span>Estimated cost</span>
+          <strong>{moneyLabel(usage.totalCostUsd)}</strong>
         </div>
       </div>
     </section>
@@ -327,10 +340,16 @@ function RecipeDetailPage({ id }) {
           <ArrowLeft size={18} />
           Recipes
         </button>
-        <button className="danger-button" type="button" onClick={handleDelete}>
-          <Trash2 size={18} />
-          Delete
-        </button>
+        <div className="header-actions">
+          <button className="secondary-button" type="button" onClick={() => navigate(`/recipes/${recipe.id}/edit`)}>
+            <Settings size={18} />
+            Edit
+          </button>
+          <button className="danger-button" type="button" onClick={handleDelete}>
+            <Trash2 size={18} />
+            Delete
+          </button>
+        </div>
       </div>
 
       <div className="detail-hero">
@@ -371,6 +390,13 @@ function RecipeDetailPage({ id }) {
                   {ingredient.quantity || ingredient.unit ? ' ' : ''}
                   {ingredient.name}
                 </strong>
+                {(ingredient.originalText || ingredient.originalQuantity || ingredient.originalUnit) && (
+                  <span>
+                    Original:{' '}
+                    {ingredient.originalText ||
+                      [ingredient.originalQuantity, ingredient.originalUnit].filter(Boolean).join(' ')}
+                  </span>
+                )}
                 {ingredient.notes && <span>{ingredient.notes}</span>}
               </li>
             ))}
@@ -405,9 +431,11 @@ function toNumberOrNull(value) {
   return Number.isFinite(number) ? number : null;
 }
 
-function AddRecipePage() {
+function AddRecipePage({ recipeId = null }) {
   const steps = ['Basic info', 'Ingredients', 'Method', 'Tags', 'Review'];
+  const isEditing = Boolean(recipeId);
   const [stepIndex, setStepIndex] = useState(0);
+  const [loadingRecipe, setLoadingRecipe] = useState(Boolean(recipeId));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [existingTags, setExistingTags] = useState([]);
@@ -424,8 +452,35 @@ function AddRecipePage() {
   });
 
   useEffect(() => {
-    api.listTags().then((payload) => setExistingTags(payload.tags)).catch(() => setExistingTags([]));
-  }, []);
+    let active = true;
+    setLoadingRecipe(Boolean(recipeId));
+
+    Promise.all([api.listTags(), recipeId ? api.getRecipe(recipeId) : Promise.resolve(null)])
+      .then(([tagPayload, recipePayload]) => {
+        if (!active) return;
+        setExistingTags(tagPayload.tags);
+
+        if (recipePayload?.recipe) {
+          const loaded = recipePayload.recipe;
+          setRecipe({
+            title: loaded.title,
+            shortDescription: loaded.shortDescription || '',
+            imageUrl: loaded.imageUrl || '',
+            activeTimeMinutes: loaded.activeTimeMinutes ?? '',
+            totalTimeMinutes: loaded.totalTimeMinutes ?? '',
+            ingredients: loaded.ingredients?.length ? loaded.ingredients : [{ ...emptyIngredient }],
+            steps: loaded.steps?.length ? loaded.steps : [{ ...emptyStep }],
+            tags: tagNames(loaded)
+          });
+        }
+      })
+      .catch((err) => active && setError(err.message))
+      .finally(() => active && setLoadingRecipe(false));
+
+    return () => {
+      active = false;
+    };
+  }, [recipeId]);
 
   const canGoNext = useMemo(() => {
     if (stepIndex === 0) return recipe.title.trim().length >= 2;
@@ -498,7 +553,7 @@ function AddRecipePage() {
         ingredients: recipe.ingredients.filter((item) => item.name.trim()),
         steps: recipe.steps.filter((item) => item.text.trim())
       };
-      const result = await api.createRecipe(payload);
+      const result = isEditing ? await api.updateRecipe(recipeId, payload) : await api.createRecipe(payload);
       navigate(`/recipes/${result.recipe.id}`);
     } catch (err) {
       setError(err.message);
@@ -507,12 +562,20 @@ function AddRecipePage() {
     }
   }
 
+  if (loadingRecipe) {
+    return (
+      <section className="view">
+        <StatusMessage loading={loadingRecipe} />
+      </section>
+    );
+  }
+
   return (
     <section className="view">
       <div className="view-header">
         <div>
-          <p className="eyebrow">Add Recipe</p>
-          <h1>Manual recipe wizard</h1>
+          <p className="eyebrow">{isEditing ? 'Edit Recipe' : 'Add Recipe'}</p>
+          <h1>{isEditing ? 'Edit recipe' : 'Manual recipe wizard'}</h1>
         </div>
       </div>
 
@@ -596,6 +659,13 @@ function AddRecipePage() {
                   value={ingredient.notes}
                   onChange={(event) => updateArrayItem('ingredients', index, 'notes', event.target.value)}
                 />
+                {(ingredient.originalText || ingredient.originalQuantity || ingredient.originalUnit) && (
+                  <div className="original-value">
+                    Original:{' '}
+                    {ingredient.originalText ||
+                      [ingredient.originalQuantity, ingredient.originalUnit].filter(Boolean).join(' ')}
+                  </div>
+                )}
                 <button
                   className="icon-button"
                   type="button"
@@ -715,7 +785,7 @@ function AddRecipePage() {
         ) : (
           <button className="primary-button" type="button" disabled={saving} onClick={saveRecipe}>
             {saving ? <Loader2 className="spin" size={18} /> : <Save size={18} />}
-            Save recipe
+            {isEditing ? 'Update recipe' : 'Save recipe'}
           </button>
         )}
       </div>
@@ -1123,6 +1193,10 @@ function SettingsPage() {
                     <strong>{numberLabel(usage.totalTokens)}</strong>
                   </div>
                   <div>
+                    <span>Total cost</span>
+                    <strong>{moneyLabel(usage.totalCostUsd)}</strong>
+                  </div>
+                  <div>
                     <span>Avg response</span>
                     <strong>{numberLabel(usage.averageResponseMs)} ms</strong>
                   </div>
@@ -1133,6 +1207,7 @@ function SettingsPage() {
                     <span>Model</span>
                     <span>Imports</span>
                     <span>Tokens</span>
+                    <span>Cost</span>
                     <span>Avg</span>
                   </div>
                   {usage.byModel.length ? (
@@ -1141,6 +1216,7 @@ function SettingsPage() {
                         <span>{row.model}</span>
                         <span>{numberLabel(row.recipeCount)}</span>
                         <span>{numberLabel(row.totalTokens)}</span>
+                        <span>{moneyLabel(row.totalCostUsd)}</span>
                         <span>{numberLabel(row.averageResponseMs)} ms</span>
                       </div>
                     ))
@@ -1236,10 +1312,12 @@ function SaasManagementPage() {
 
 export default function App() {
   const route = useRoute();
-  const recipeMatch = route.match(/^\/recipes\/(.+)$/);
+  const editMatch = route.match(/^\/recipes\/(.+)\/edit$/);
+  const recipeMatch = editMatch ? null : route.match(/^\/recipes\/(.+)$/);
 
   let page;
-  if (recipeMatch) page = <RecipeDetailPage id={recipeMatch[1]} />;
+  if (editMatch) page = <AddRecipePage recipeId={editMatch[1]} />;
+  else if (recipeMatch) page = <RecipeDetailPage id={recipeMatch[1]} />;
   else if (route === '/add') page = <AddRecipePage />;
   else if (route === '/import') page = <ImportPage />;
   else if (route === '/tags') page = <TagsSearchPage />;

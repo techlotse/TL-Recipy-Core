@@ -15,12 +15,24 @@ export const ingredientSchema = z.object({
   name: z.string().trim().min(1, 'Ingredient name is required'),
   quantity: z.string().trim().optional().default(''),
   unit: z.string().trim().optional().default(''),
-  notes: z.string().trim().optional().default('')
+  notes: z.string().trim().optional().default(''),
+  originalQuantity: z.string().trim().optional().default(''),
+  originalUnit: z.string().trim().optional().default(''),
+  originalText: z.string().trim().optional().default('')
 });
 
 export const stepSchema = z.object({
   text: z.string().trim().min(1, 'Step text is required')
 });
+
+const tagInputSchema = z
+  .union([
+    z.string().trim().min(1),
+    z.object({
+      name: z.string().trim().min(1)
+    })
+  ])
+  .transform((value) => (typeof value === 'string' ? value : value.name));
 
 export const recipeInputSchema = z.object({
   title: z.string().trim().min(2, 'Title is required'),
@@ -30,7 +42,7 @@ export const recipeInputSchema = z.object({
   totalTimeMinutes: z.number().int().nonnegative().nullable().optional(),
   ingredients: z.array(ingredientSchema).min(1, 'Add at least one ingredient'),
   steps: z.array(stepSchema).min(1, 'Add at least one method step'),
-  tags: z.array(z.string().trim().min(1)).max(30).optional().default([]),
+  tags: z.array(tagInputSchema).max(30).optional().default([]),
   sourceUrl: z.string().trim().url().optional().or(z.literal('')).default(''),
   importMode: z.enum(['manual', 'verbatim', 'ai']).optional().default('manual'),
   llmUsage: z
@@ -40,7 +52,12 @@ export const recipeInputSchema = z.object({
       inputTokens: z.number().int().nonnegative().nullable().optional(),
       outputTokens: z.number().int().nonnegative().nullable().optional(),
       totalTokens: z.number().int().nonnegative().nullable().optional(),
-      responseMs: z.number().int().nonnegative().nullable().optional()
+      responseMs: z.number().int().nonnegative().nullable().optional(),
+      inputPricePerMillionUsd: z.number().nonnegative().nullable().optional(),
+      outputPricePerMillionUsd: z.number().nonnegative().nullable().optional(),
+      inputCostUsd: z.number().nonnegative().nullable().optional(),
+      outputCostUsd: z.number().nonnegative().nullable().optional(),
+      totalCostUsd: z.number().nonnegative().nullable().optional()
     })
     .nullable()
     .optional()

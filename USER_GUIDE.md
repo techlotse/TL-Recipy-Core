@@ -66,6 +66,8 @@ The LLM tab can use:
 
 AI-processed recipe imports store the model, input tokens, output tokens, total tokens, and response time. Recipe detail pages show those metrics when available.
 
+AI-processed imports also store the input/output token price and calculated cost at the time of import. If an ingredient was converted to metric, the original ingredient text or original value is shown below the metric value when available.
+
 ## Personal Backups
 
 Open `Settings` and select `Backup`.

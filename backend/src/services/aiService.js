@@ -4,6 +4,7 @@ import { getOpenAiApiKey, getOpenAiModel, getPublicSettings } from './settingsSt
 import { parseDurationToMinutes } from '../utils/duration.js';
 import { recipeInputSchema } from '../validation.js';
 import { uniqueStrings } from '../utils/slug.js';
+import { getOpenAiModelPricing } from '../llmOptions.js';
 
 function stripCodeFence(value) {
   return String(value || '')
@@ -29,14 +30,17 @@ function parseJsonOutput(value) {
 
 function normalizeIngredient(value) {
   if (typeof value === 'string') {
-    return { name: value, quantity: '', unit: '', notes: '' };
+    return { name: value, quantity: '', unit: '', notes: '', originalQuantity: '', originalUnit: '', originalText: value };
   }
 
   return {
     name: String(value?.name || value?.ingredient || '').trim(),
     quantity: String(value?.quantity || value?.amount || '').trim(),
     unit: String(value?.unit || '').trim(),
-    notes: String(value?.notes || value?.note || '').trim()
+    notes: String(value?.notes || value?.note || '').trim(),
+    originalQuantity: String(value?.originalQuantity || value?.originalAmount || '').trim(),
+    originalUnit: String(value?.originalUnit || '').trim(),
+    originalText: String(value?.originalText || value?.sourceText || '').trim()
   };
 }
 
@@ -60,13 +64,24 @@ function usageFromResponses(data, model, responseMs) {
   const usage = data.usage || {};
   const inputTokens = usage.input_tokens ?? usage.prompt_tokens ?? 0;
   const outputTokens = usage.output_tokens ?? usage.completion_tokens ?? 0;
+  const pricing = getOpenAiModelPricing(model);
+  const inputPricePerMillionUsd = pricing?.inputPerMillionUsd || 0;
+  const outputPricePerMillionUsd = pricing?.outputPerMillionUsd || 0;
+  const inputCostUsd = (inputTokens / 1000000) * inputPricePerMillionUsd;
+  const outputCostUsd = (outputTokens / 1000000) * outputPricePerMillionUsd;
+
   return {
     provider: 'own_chatgpt',
     model,
     inputTokens,
     outputTokens,
     totalTokens: usage.total_tokens ?? inputTokens + outputTokens,
-    responseMs
+    responseMs,
+    inputPricePerMillionUsd,
+    outputPricePerMillionUsd,
+    inputCostUsd,
+    outputCostUsd,
+    totalCostUsd: inputCostUsd + outputCostUsd
   };
 }
 
@@ -115,14 +130,17 @@ export async function normalizeRecipeWithOpenAi({ sourceUrl, extracted, sourceTe
       imageUrl: 'string',
       activeTimeMinutes: 'number or null',
       totalTimeMinutes: 'number or null',
-      ingredients: [
-        {
-          name: 'string',
-          quantity: 'metric quantity as string',
-          unit: 'metric unit',
-          notes: 'string'
-        }
-      ],
+          ingredients: [
+            {
+              name: 'string',
+              quantity: 'metric quantity as string',
+              unit: 'metric unit',
+              notes: 'string',
+              originalQuantity: 'original quantity before metric conversion, if different',
+              originalUnit: 'original unit before metric conversion, if different',
+              originalText: 'original ingredient line before normalization'
+            }
+          ],
       method: [{ text: 'ordered cooking step' }],
       tags: ['string']
     },

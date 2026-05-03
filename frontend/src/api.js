@@ -34,6 +34,9 @@ export const api = {
   async createRecipe(recipe) {
     return request('/api/recipes', { method: 'POST', body: recipe });
   },
+  async updateRecipe(id, recipe) {
+    return request(`/api/recipes/${id}`, { method: 'PUT', body: recipe });
+  },
   async deleteRecipe(id) {
     return request(`/api/recipes/${id}`, { method: 'DELETE' });
   },

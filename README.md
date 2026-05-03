@@ -1,7 +1,7 @@
 # TL Recipe Core
 
 [![CI](https://github.com/Techlotse/TL-Recipy-Core/actions/workflows/ci.yml/badge.svg)](https://github.com/Techlotse/TL-Recipy-Core/actions/workflows/ci.yml)
-![Version](https://img.shields.io/badge/version-0.1.0-00d1b2)
+![Version](https://img.shields.io/badge/version-0.4.0-00d1b2)
 ![Docker build](https://img.shields.io/badge/docker-build%20in%20CI-a6e22e)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 
@@ -14,6 +14,8 @@ TL Recipe Core is a dark-mode-first internal recipe manager for saving, importin
 - Wizard-based manual recipe creation.
 - URL import with verbatim extraction or ChatGPT-processed normalization.
 - AI processing prompt path for metric conversion, Celsius temperatures, and JSON output before saving.
+- AI import usage metrics with model, tokens, response time, and cost snapshot.
+- Recipe editing.
 - Search and tag filtering.
 - Tabbed Settings page for general preferences, LLM configuration, key verification, usage stats, and personal backups.
 - PostgreSQL database with sample recipes.
@@ -76,7 +78,7 @@ docker compose up
 | --- | --- | --- |
 | `PORT` | `8080` | HTTP port inside the app container. |
 | `APP_PORT` | `8080` | Host port exposed by Docker Compose. Change this if `8080` is already in use. |
-| `DOCKER_IMAGE` | `techlotse/tl-recipe-core:v0.1.0` | Published image used by `docker-compose.yml`. |
+| `DOCKER_IMAGE` | `techlotse/tl-recipe-core:v0.4.0` | Published image used by `docker-compose.yml`. |
 | `DATABASE_URL` | Compose PostgreSQL URL | Backend database connection string. |
 | `APP_SECRET` | development fallback | Encrypts stored API keys. Set this before real use. |
 | `SEED_SAMPLE_DATA` | `true` | Inserts sample recipes when the database is empty. |
@@ -92,6 +94,8 @@ For internal use, either:
 - Add the key in `Settings` inside the app.
 
 Keys entered in Settings are sent to the backend and stored encrypted in PostgreSQL using `APP_SECRET`. The frontend only receives whether a key is configured and never receives the stored key value.
+
+AI imports store a cost snapshot using the selected model's input and output token prices at import time. The app currently stores pricing for `gpt-5.5`, `gpt-5.4-mini`, and `gpt-5.4-nano`.
 
 ## Update and Rebuild
 

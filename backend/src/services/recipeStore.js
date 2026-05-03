@@ -28,7 +28,12 @@ export function mapRecipe(row) {
         inputTokens: row.llm_input_tokens || 0,
         outputTokens: row.llm_output_tokens || 0,
         totalTokens: row.llm_total_tokens || 0,
-        responseMs: row.llm_response_ms || 0
+        responseMs: row.llm_response_ms || 0,
+        inputPricePerMillionUsd: Number(row.llm_input_price_per_million_usd || 0),
+        outputPricePerMillionUsd: Number(row.llm_output_price_per_million_usd || 0),
+        inputCostUsd: Number(row.llm_input_cost_usd || 0),
+        outputCostUsd: Number(row.llm_output_cost_usd || 0),
+        totalCostUsd: Number(row.llm_total_cost_usd || 0)
       }
     : null;
 
@@ -144,9 +149,14 @@ export async function createRecipe(input) {
       `INSERT INTO recipes (
         id, title, short_description, image_url, active_time_minutes, total_time_minutes,
         ingredients, steps, source_url, import_mode, llm_provider, llm_model,
-        llm_input_tokens, llm_output_tokens, llm_total_tokens, llm_response_ms
+        llm_input_tokens, llm_output_tokens, llm_total_tokens, llm_response_ms,
+        llm_input_price_per_million_usd, llm_output_price_per_million_usd,
+        llm_input_cost_usd, llm_output_cost_usd, llm_total_cost_usd
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9, $10, $11, $12, $13, $14, $15, $16)
+      VALUES (
+        $1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9, $10, $11, $12, $13, $14, $15,
+        $16, $17, $18, $19, $20, $21
+      )
       RETURNING *`,
       [
         id,
@@ -164,7 +174,12 @@ export async function createRecipe(input) {
         input.llmUsage?.inputTokens ?? null,
         input.llmUsage?.outputTokens ?? null,
         input.llmUsage?.totalTokens ?? null,
-        input.llmUsage?.responseMs ?? null
+        input.llmUsage?.responseMs ?? null,
+        input.llmUsage?.inputPricePerMillionUsd ?? null,
+        input.llmUsage?.outputPricePerMillionUsd ?? null,
+        input.llmUsage?.inputCostUsd ?? null,
+        input.llmUsage?.outputCostUsd ?? null,
+        input.llmUsage?.totalCostUsd ?? null
       ]
     );
 

@@ -42,6 +42,7 @@ async function getUsageSummary() {
        COALESCE(SUM(llm_input_tokens), 0)::int AS input_tokens,
        COALESCE(SUM(llm_output_tokens), 0)::int AS output_tokens,
        COALESCE(SUM(llm_total_tokens), 0)::int AS total_tokens,
+       COALESCE(SUM(llm_total_cost_usd), 0)::float AS total_cost_usd,
        COALESCE(ROUND(AVG(llm_response_ms))::int, 0) AS average_response_ms
      FROM recipes`
   );
@@ -52,6 +53,7 @@ async function getUsageSummary() {
        COALESCE(SUM(llm_input_tokens), 0)::int AS input_tokens,
        COALESCE(SUM(llm_output_tokens), 0)::int AS output_tokens,
        COALESCE(SUM(llm_total_tokens), 0)::int AS total_tokens,
+       COALESCE(SUM(llm_total_cost_usd), 0)::float AS total_cost_usd,
        COALESCE(ROUND(AVG(llm_response_ms))::int, 0) AS average_response_ms
      FROM recipes
      WHERE llm_model IS NOT NULL
@@ -64,6 +66,7 @@ async function getUsageSummary() {
     inputTokens: total.rows[0].input_tokens,
     outputTokens: total.rows[0].output_tokens,
     totalTokens: total.rows[0].total_tokens,
+    totalCostUsd: Number(total.rows[0].total_cost_usd || 0),
     averageResponseMs: total.rows[0].average_response_ms,
     byModel: byModel.rows.map((row) => ({
       model: row.llm_model,
@@ -71,6 +74,7 @@ async function getUsageSummary() {
       inputTokens: row.input_tokens,
       outputTokens: row.output_tokens,
       totalTokens: row.total_tokens,
+      totalCostUsd: Number(row.total_cost_usd || 0),
       averageResponseMs: row.average_response_ms
     }))
   };

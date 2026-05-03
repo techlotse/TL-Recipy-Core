@@ -16,6 +16,11 @@ CREATE TABLE IF NOT EXISTS recipes (
   llm_output_tokens INTEGER NULL CHECK (llm_output_tokens IS NULL OR llm_output_tokens >= 0),
   llm_total_tokens INTEGER NULL CHECK (llm_total_tokens IS NULL OR llm_total_tokens >= 0),
   llm_response_ms INTEGER NULL CHECK (llm_response_ms IS NULL OR llm_response_ms >= 0),
+  llm_input_price_per_million_usd NUMERIC(12,6) NULL,
+  llm_output_price_per_million_usd NUMERIC(12,6) NULL,
+  llm_input_cost_usd NUMERIC(12,6) NULL,
+  llm_output_cost_usd NUMERIC(12,6) NULL,
+  llm_total_cost_usd NUMERIC(12,6) NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
