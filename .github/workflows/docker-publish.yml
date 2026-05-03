@@ -1,6 +1,9 @@
 name: Create Docker Container
 
 on:
+  push:
+    branches:
+      - main
   schedule:
     - cron: "0 6 * * 0"
   workflow_dispatch:
