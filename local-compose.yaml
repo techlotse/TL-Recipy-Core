@@ -1,0 +1,38 @@
+services:
+  app:
+    build:
+      context: .
+    image: tl-recipe-core:local
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      DATABASE_URL: postgres://tl_recipe:tl_recipe@db:5432/tl_recipe_core
+      APP_SECRET: ${APP_SECRET:-local-dev-change-me}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.4-nano}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      SEED_SAMPLE_DATA: ${SEED_SAMPLE_DATA:-true}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: tl_recipe_core
+      POSTGRES_USER: tl_recipe
+      POSTGRES_PASSWORD: tl_recipe
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tl_recipe -d tl_recipe_core"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - tl_recipe_local_db:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  tl_recipe_local_db:

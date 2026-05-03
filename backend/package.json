@@ -1,0 +1,17 @@
+{
+  "name": "@tl-recipe-core/backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "cheerio": "1.2.0",
+    "express": "5.2.1",
+    "pg": "8.20.0",
+    "zod": "4.4.2"
+  }
+}
