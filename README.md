@@ -23,7 +23,7 @@ TL Recipe Core is a dark-mode-first internal recipe manager for saving, importin
 ## Requirements
 
 - Docker and Docker Compose.
-- Node.js 22 if developing outside Docker.
+- Node.js 24 if developing outside Docker.
 - An OpenAI API key only if using AI-processed imports.
 
 ## Quick Start

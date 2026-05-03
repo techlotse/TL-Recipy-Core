@@ -17,6 +17,6 @@
     "test": "node --test backend/tests/duration.test.js backend/tests/normalization.test.js"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=24.0.0"
   }
 }
