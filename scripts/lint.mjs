@@ -5,6 +5,7 @@ import path from 'node:path';
 const root = process.cwd();
 const requiredFiles = [
   'Dockerfile',
+  'VERSION',
   'docker-compose.yml',
   'local-compose.yaml',
   'README.md',

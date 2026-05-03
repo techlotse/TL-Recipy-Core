@@ -76,7 +76,7 @@ docker compose up
 | --- | --- | --- |
 | `PORT` | `8080` | HTTP port inside the app container. |
 | `APP_PORT` | `8080` | Host port exposed by Docker Compose. Change this if `8080` is already in use. |
-| `DOCKER_IMAGE` | `techlotse/tl-recipe-core:0.1.0` | Published image used by `docker-compose.yml`. |
+| `DOCKER_IMAGE` | `techlotse/tl-recipe-core:v0.1.0` | Published image used by `docker-compose.yml`. |
 | `DATABASE_URL` | Compose PostgreSQL URL | Backend database connection string. |
 | `APP_SECRET` | development fallback | Encrypts stored API keys. Set this before real use. |
 | `SEED_SAMPLE_DATA` | `true` | Inserts sample recipes when the database is empty. |
@@ -168,7 +168,7 @@ npm run build
 docker build -t tl-recipe-core:local .
 ```
 
-The GitHub Actions workflow runs those checks on pull requests, pushes to `main`, and weekly on Monday.
+The GitHub Actions workflow runs those checks on pull requests, pushes to `main`, manual dispatch, and weekly on Sunday.
 
 ## API Summary
 
