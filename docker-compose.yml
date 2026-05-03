@@ -1,6 +1,6 @@
 services:
   app:
-    image: ${DOCKER_IMAGE:-techlotse/tl-recipe-core:v0.4.0}
+    image: ${DOCKER_IMAGE:-techlotse/tl-recipe-core:v0.4.2}
     pull_policy: always
     depends_on:
       db:

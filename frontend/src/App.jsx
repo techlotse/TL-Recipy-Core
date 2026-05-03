@@ -945,6 +945,7 @@ function SettingsPage() {
   ];
   const [activeTab, setActiveTab] = useState('general');
   const [settings, setSettings] = useState(null);
+  const [appVersion, setAppVersion] = useState(null);
   const [apiKey, setApiKey] = useState('');
   const [clearKey, setClearKey] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -954,9 +955,11 @@ function SettingsPage() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    api
-      .getSettings()
-      .then((payload) => setSettings(payload.settings))
+    Promise.all([api.getSettings(), api.getVersion()])
+      .then(([settingsPayload, versionPayload]) => {
+        setSettings(settingsPayload.settings);
+        setAppVersion(versionPayload);
+      })
       .catch((err) => setError(err.message));
   }, []);
 
@@ -1109,6 +1112,13 @@ function SettingsPage() {
                   />
                   <span>Enable AI processing</span>
                 </label>
+                <div className="field">
+                  <span>Running version</span>
+                  <div className="setting-status">
+                    <Settings size={17} />
+                    {appVersion ? `${appVersion.name} ${appVersion.version}` : 'Loading'}
+                  </div>
+                </div>
               </div>
             )}
 

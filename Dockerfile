@@ -5,6 +5,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY backend/package.json backend/package.json
 COPY frontend/package.json frontend/package.json
+RUN npm install -g npm@11.13.0
 RUN npm ci
 
 FROM deps AS build
@@ -18,6 +19,7 @@ ENV PORT=8080
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY backend/package.json backend/package.json
+RUN npm install -g npm@11.13.0
 RUN npm ci --omit=dev --workspace backend
 COPY backend/src backend/src
 COPY database database
