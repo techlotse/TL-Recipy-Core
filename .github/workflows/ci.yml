@@ -13,7 +13,7 @@ jobs:
     name: Lint, test, build
     runs-on: ubuntu-latest
     env:
-      IMAGE_NAME: ${{ secrets.ORG_DOCKERHUB_USER }}/tl-recipe-core
+      IMAGE_NAME: techlotse/tl-recipe-core
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
