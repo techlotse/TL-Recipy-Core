@@ -1,7 +1,7 @@
 # TL Recipe Core
 
 [![CI](https://github.com/Techlotse/TL-Recipy-Core/actions/workflows/ci.yml/badge.svg)](https://github.com/Techlotse/TL-Recipy-Core/actions/workflows/ci.yml)
-![Version](https://img.shields.io/badge/version-0.5.0-00d1b2)
+![Version](https://img.shields.io/badge/version-0.5.1-00d1b2)
 ![Docker build](https://img.shields.io/badge/docker-build%20in%20CI-a6e22e)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 
@@ -9,6 +9,7 @@ TL Recipe Core is a dark-mode-first internal recipe manager for saving, importin
 
 ## Feature Overview
 
+- Version history is tracked in [CHANGELOG.md](CHANGELOG.md).
 - Recipe cards with image, description, tags, active time, and total time.
 - Full recipe detail pages with ingredients, method, source URL, and metadata.
 - Wizard-based manual recipe creation.
@@ -79,7 +80,7 @@ docker compose up
 | --- | --- | --- |
 | `PORT` | `8080` | HTTP port inside the app container. |
 | `APP_PORT` | `8080` | Host port exposed by Docker Compose. Change this if `8080` is already in use. |
-| `DOCKER_IMAGE` | `techlotse/tl-recipe-core:v0.5.0` | Published image used by `docker-compose.yml`. |
+| `DOCKER_IMAGE` | `techlotse/tl-recipe-core:v0.5.1` | Published image used by `docker-compose.yml`. |
 | `DATABASE_URL` | Compose PostgreSQL URL | Backend database connection string. |
 | `APP_SECRET` | development fallback | Encrypts stored API keys. Set this before real use. |
 | `SEED_SAMPLE_DATA` | `true` | Inserts sample recipes when the database is empty. |

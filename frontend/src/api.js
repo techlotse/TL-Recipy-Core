@@ -1,3 +1,21 @@
+function formatIssue(issue) {
+  const path = Array.isArray(issue.path) && issue.path.length ? `${issue.path.join('.')}: ` : '';
+  return `${path}${issue.message || 'Invalid value'}`;
+}
+
+function formatErrorDetails(details) {
+  if (!details) return '';
+  if (typeof details === 'string') return details;
+  if (Array.isArray(details)) {
+    return details.map((detail) => (typeof detail === 'string' ? detail : formatIssue(detail))).join('; ');
+  }
+  if (typeof details === 'object') {
+    if (details.message) return details.message;
+    return JSON.stringify(details);
+  }
+  return String(details);
+}
+
 async function request(path, options = {}) {
   const response = await fetch(path, {
     ...options,
@@ -13,7 +31,7 @@ async function request(path, options = {}) {
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     const message = payload?.error?.message || 'Request failed';
-    const details = payload?.error?.details;
+    const details = formatErrorDetails(payload?.error?.details);
     throw new Error(details ? `${message}: ${details}` : message);
   }
 

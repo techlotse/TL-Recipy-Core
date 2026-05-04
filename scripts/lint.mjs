@@ -6,6 +6,7 @@ const root = process.cwd();
 const requiredFiles = [
   'Dockerfile',
   'VERSION',
+  'CHANGELOG.md',
   'docker-compose.yml',
   'local-compose.yaml',
   'README.md',
