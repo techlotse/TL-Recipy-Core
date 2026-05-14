@@ -16,8 +16,15 @@ const appVersion = JSON.parse(
 
 export function createApp() {
   const app = express();
+  const defaultJsonParser = express.json({ limit: '3mb' });
 
-  app.use(express.json({ limit: '3mb' }));
+  app.use((req, res, next) => {
+    if (req.path === '/api/imports/photos') {
+      next();
+      return;
+    }
+    defaultJsonParser(req, res, next);
+  });
 
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });

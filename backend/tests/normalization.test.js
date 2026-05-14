@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizeAiRecipePayload } from '../src/services/aiService.js';
+import { photoImportRequestSchema } from '../src/validation.js';
 
 test('normalizes AI payloads into recipe input shape', () => {
   const recipe = normalizeAiRecipePayload(
@@ -60,5 +61,21 @@ test('rejects wrapped AI payloads with top-level non-food flags', () => {
         'https://example.com/not-food'
       ),
     /not a food recipe/
+  );
+});
+
+test('validates photo import upload limits', () => {
+  const photo = {
+    name: 'recipe.jpg',
+    type: 'image/jpeg',
+    dataUrl: 'data:image/jpeg;base64,abcd'
+  };
+
+  const valid = photoImportRequestSchema.parse({ photos: [photo] });
+  assert.equal(valid.photos.length, 1);
+
+  assert.throws(
+    () => photoImportRequestSchema.parse({ photos: Array.from({ length: 6 }, () => photo) }),
+    /Upload up to 5 photos/
   );
 });

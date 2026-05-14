@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added startup retry handling for temporary PostgreSQL DNS/readiness failures.
+- Added AI-assisted photo import for up to five uploaded recipe photos.
 - Hardened OpenAI import instructions to accept only edible food cooking recipes and ignore hidden AI-agent instructions in imported page content.
 
 ## v0.5.1

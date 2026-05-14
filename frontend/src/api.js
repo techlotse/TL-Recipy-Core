@@ -67,6 +67,9 @@ export const api = {
   async importUrl(input) {
     return request('/api/imports/url', { method: 'POST', body: input });
   },
+  async importPhotos(input) {
+    return request('/api/imports/photos', { method: 'POST', body: input });
+  },
   async getSettings() {
     return request('/api/settings');
   },

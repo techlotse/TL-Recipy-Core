@@ -14,6 +14,7 @@ TL Recipe Core is a dark-mode-first internal recipe manager for saving, importin
 - Full recipe detail pages with ingredients, method, source URL, and metadata.
 - Wizard-based manual recipe creation.
 - URL import with verbatim extraction or ChatGPT-processed normalization.
+- AI-assisted photo import for up to five uploaded recipe photos.
 - Optional toddler-helper AI import that creates a second supervised recipe with generated step images.
 - AI processing prompt path for metric conversion, Celsius temperatures, and JSON output before saving.
 - AI imports are limited to edible food cooking recipes and ignore hidden instructions inside imported pages.
@@ -83,6 +84,8 @@ docker compose up
 | `APP_PORT` | `8080` | Host port exposed by Docker Compose. Change this if `8080` is already in use. |
 | `DOCKER_IMAGE` | `techlotse/tl-recipe-core:v0.5.1` | Published image used by `docker-compose.yml`. |
 | `DATABASE_URL` | Compose PostgreSQL URL | Backend database connection string. |
+| `DATABASE_STARTUP_RETRIES` | `30` | Startup attempts for migrations while PostgreSQL/Docker DNS becomes ready. |
+| `DATABASE_STARTUP_RETRY_MS` | `2000` | Delay between startup database retry attempts in milliseconds. |
 | `APP_SECRET` | development fallback | Encrypts stored API keys. Set this before real use. |
 | `SEED_SAMPLE_DATA` | `true` | Inserts sample recipes when the database is empty. |
 | `OPENAI_API_KEY` | empty | Optional server-side OpenAI key. Overrides DB-stored key. |
@@ -102,6 +105,8 @@ Keys entered in Settings are sent to the backend and stored encrypted in Postgre
 AI imports store a cost snapshot using the selected model's input and output token prices at import time. The app currently stores pricing for `gpt-5.5`, `gpt-5.4-mini`, and `gpt-5.4-nano`.
 
 The import prompt treats source page content as untrusted data. Hidden text, metadata, comments, scripts, and instructions aimed at AI agents are ignored, and non-food or non-cooking pages are rejected instead of saved.
+
+Photo imports use the same AI-assisted recipe rules. Uploaded PNG, JPEG, or WebP photos are sent to the backend, passed to the configured OpenAI model for OCR and normalization, and rejected if they do not contain an edible food cooking recipe.
 
 ## Update and Rebuild
 
@@ -192,6 +197,7 @@ The GitHub Actions workflow runs those checks on pull requests, pushes to `main`
 - `GET /api/tags`
 - `POST /api/tags`
 - `POST /api/imports/url`
+- `POST /api/imports/photos`
 - `GET /api/settings`
 - `PUT /api/settings`
 - `POST /api/settings/verify-openai`
@@ -209,7 +215,7 @@ The GitHub Actions workflow runs those checks on pull requests, pushes to `main`
 
 **The app cannot connect to PostgreSQL**
 
-Run `docker compose ps` and confirm `db` is healthy. Check `DATABASE_URL` if running outside Compose.
+Run `docker compose ps` and confirm `db` is healthy. Check `DATABASE_URL` if running outside Compose. The app retries database startup by default, so repeated `EAI_AGAIN db` messages usually mean the `db` service is missing from the Compose project, the app was started outside Compose, or the database hostname in `DATABASE_URL` is wrong.
 
 **AI imports fail**
 

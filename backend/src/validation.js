@@ -74,6 +74,25 @@ export const importRequestSchema = z.object({
   createToddlerVersion: z.boolean().optional().default(false)
 });
 
+const photoDataUrlSchema = z
+  .string()
+  .trim()
+  .regex(/^data:image\/(jpeg|jpg|png|webp);base64,[a-z0-9+/=\s]+$/i, 'Upload PNG, JPEG, or WebP photos');
+
+export const photoImportRequestSchema = z.object({
+  photos: z
+    .array(
+      z.object({
+        name: z.string().trim().max(255).optional().default(''),
+        type: z.string().trim().optional().default(''),
+        dataUrl: photoDataUrlSchema
+      })
+    )
+    .min(1, 'Upload at least one recipe photo')
+    .max(5, 'Upload up to 5 photos'),
+  createToddlerVersion: z.boolean().optional().default(false)
+});
+
 export const settingsInputSchema = z.object({
   openaiApiKey: z.string().optional(),
   defaultLanguage: z.string().trim().min(2).max(12).optional(),

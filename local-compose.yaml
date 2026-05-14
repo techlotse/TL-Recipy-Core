@@ -10,6 +10,8 @@ services:
       NODE_ENV: production
       PORT: 8080
       DATABASE_URL: postgres://tl_recipe:tl_recipe@db:5432/tl_recipe_core
+      DATABASE_STARTUP_RETRIES: ${DATABASE_STARTUP_RETRIES:-30}
+      DATABASE_STARTUP_RETRY_MS: ${DATABASE_STARTUP_RETRY_MS:-2000}
       APP_SECRET: ${APP_SECRET:-local-dev-change-me}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.4-nano}
@@ -27,9 +29,10 @@ services:
       POSTGRES_PASSWORD: tl_recipe
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U tl_recipe -d tl_recipe_core"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 12
+      start_period: 10s
     volumes:
       - tl_recipe_local_db:/var/lib/postgresql/data
     restart: unless-stopped

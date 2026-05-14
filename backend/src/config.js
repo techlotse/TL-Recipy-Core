@@ -11,6 +11,8 @@ export const config = {
   databaseUrl:
     process.env.DATABASE_URL ||
     'postgres://tl_recipe:tl_recipe@localhost:5432/tl_recipe_core',
+  databaseStartupRetries: Number(process.env.DATABASE_STARTUP_RETRIES || 30),
+  databaseStartupRetryMs: Number(process.env.DATABASE_STARTUP_RETRY_MS || 2000),
   frontendDist: process.env.FRONTEND_DIST || path.join(rootDir, 'frontend', 'dist'),
   migrationsDir: path.join(rootDir, 'database', 'migrations'),
   nodeEnv: process.env.NODE_ENV || 'development',

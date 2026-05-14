@@ -29,6 +29,9 @@ import { api } from './api.js';
 const emptyIngredient = { name: '', quantity: '', unit: '', notes: '' };
 const emptyStep = { text: '' };
 const isAdminUser = true;
+const MAX_IMPORT_PHOTOS = 5;
+const MAX_IMPORT_PHOTO_BYTES = 4 * 1024 * 1024;
+const IMPORT_PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 function getRoute() {
   const hash = window.location.hash.replace(/^#/, '');
@@ -68,6 +71,12 @@ function moneyLabel(value) {
     minimumFractionDigits: 4,
     maximumFractionDigits: 6
   }).format(value || 0);
+}
+
+function fileSizeLabel(bytes) {
+  if (!bytes) return '';
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function tagNames(recipe) {
@@ -805,12 +814,73 @@ function AddRecipePage({ recipeId = null }) {
 }
 
 function ImportPage() {
+  const [sourceType, setSourceType] = useState('url');
   const [url, setUrl] = useState('');
   const [mode, setMode] = useState('verbatim');
+  const [photos, setPhotos] = useState([]);
   const [createToddlerVersion, setCreateToddlerVersion] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [warnings, setWarnings] = useState([]);
+
+  function chooseSource(nextSourceType) {
+    setSourceType(nextSourceType);
+    setError('');
+    setWarnings([]);
+    if (nextSourceType === 'photos') {
+      setMode('ai');
+    }
+  }
+
+  function readPhotoFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () =>
+        resolve({
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          dataUrl: String(reader.result || '')
+        });
+      reader.onerror = () => reject(new Error(`Could not read ${file.name}`));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handlePhotoUpload(event) {
+    const selected = Array.from(event.target.files || []);
+    event.target.value = '';
+    if (!selected.length) return;
+
+    if (photos.length + selected.length > MAX_IMPORT_PHOTOS) {
+      setError(`Photo import supports up to ${MAX_IMPORT_PHOTOS} photos.`);
+      return;
+    }
+
+    const invalidType = selected.find((file) => !IMPORT_PHOTO_TYPES.has(file.type));
+    if (invalidType) {
+      setError('Photo import supports PNG, JPEG, and WebP images.');
+      return;
+    }
+
+    const oversized = selected.find((file) => file.size > MAX_IMPORT_PHOTO_BYTES);
+    if (oversized) {
+      setError(`Each photo must be ${fileSizeLabel(MAX_IMPORT_PHOTO_BYTES)} or smaller.`);
+      return;
+    }
+
+    setError('');
+    try {
+      const uploaded = await Promise.all(selected.map(readPhotoFile));
+      setPhotos((current) => [...current, ...uploaded]);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  function removePhoto(index) {
+    setPhotos((current) => current.filter((_, photoIndex) => photoIndex !== index));
+  }
 
   async function submit(event) {
     event.preventDefault();
@@ -818,11 +888,17 @@ function ImportPage() {
     setError('');
     setWarnings([]);
     try {
-      const result = await api.importUrl({
-        url,
-        mode,
-        createToddlerVersion: mode === 'ai' && createToddlerVersion
-      });
+      const result =
+        sourceType === 'photos'
+          ? await api.importPhotos({
+              photos: photos.map(({ name, type, dataUrl }) => ({ name, type, dataUrl })),
+              createToddlerVersion
+            })
+          : await api.importUrl({
+              url,
+              mode,
+              createToddlerVersion: mode === 'ai' && createToddlerVersion
+            });
       setWarnings(result.warnings || []);
       navigate(`/recipes/${result.recipe.id}`);
     } catch (err) {
@@ -836,39 +912,100 @@ function ImportPage() {
     <section className="view">
       <div className="view-header">
         <div>
-          <p className="eyebrow">Import from URL</p>
-          <h1>Save a recipe from the web</h1>
+          <p className="eyebrow">Import recipe</p>
+          <h1>Save a recipe from the web or photos</h1>
         </div>
       </div>
 
       <form className="surface stack" onSubmit={submit}>
-        <Field label="Recipe URL">
-          <input value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://example.com/recipe" />
-        </Field>
-
         <div className="option-grid">
           <button
-            className={`option-card ${mode === 'verbatim' ? 'selected' : ''}`}
+            className={`option-card ${sourceType === 'url' ? 'selected' : ''}`}
             type="button"
-            onClick={() => {
-              setMode('verbatim');
-              setCreateToddlerVersion(false);
-            }}
+            onClick={() => chooseSource('url')}
           >
             <LinkIcon size={22} />
-            <strong>Verbatim import</strong>
-            <span>Extract and save the page recipe as-is where possible.</span>
+            <strong>Recipe URL</strong>
+            <span>Import from a web page with recipe metadata or visible recipe text.</span>
           </button>
           <button
-            className={`option-card ${mode === 'ai' ? 'selected' : ''}`}
+            className={`option-card ${sourceType === 'photos' ? 'selected' : ''}`}
             type="button"
-            onClick={() => setMode('ai')}
+            onClick={() => chooseSource('photos')}
           >
-            <KeyRound size={22} />
-            <strong>ChatGPT processed import</strong>
-            <span>Normalize structure, remove story content, and convert units to metric.</span>
+            <UploadCloud size={22} />
+            <strong>Recipe photos</strong>
+            <span>Upload up to five photos and extract the recipe with ChatGPT assistance.</span>
           </button>
         </div>
+
+        {sourceType === 'url' && (
+          <Field label="Recipe URL">
+            <input value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://example.com/recipe" />
+          </Field>
+        )}
+
+        {sourceType === 'url' && (
+          <div className="option-grid">
+            <button
+              className={`option-card ${mode === 'verbatim' ? 'selected' : ''}`}
+              type="button"
+              onClick={() => {
+                setMode('verbatim');
+                setCreateToddlerVersion(false);
+              }}
+            >
+              <LinkIcon size={22} />
+              <strong>Verbatim import</strong>
+              <span>Extract and save the page recipe as-is where possible.</span>
+            </button>
+            <button
+              className={`option-card ${mode === 'ai' ? 'selected' : ''}`}
+              type="button"
+              onClick={() => setMode('ai')}
+            >
+              <KeyRound size={22} />
+              <strong>ChatGPT processed import</strong>
+              <span>Normalize structure, remove story content, and convert units to metric.</span>
+            </button>
+          </div>
+        )}
+
+        {sourceType === 'photos' && (
+          <div className="photo-import-panel">
+            <label className={`photo-drop ${photos.length >= MAX_IMPORT_PHOTOS ? 'disabled' : ''}`}>
+              <UploadCloud size={24} />
+              <strong>Upload recipe photos</strong>
+              <span>
+                PNG, JPEG, or WebP. Up to {MAX_IMPORT_PHOTOS} photos, {fileSizeLabel(MAX_IMPORT_PHOTO_BYTES)} each.
+              </span>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                multiple
+                disabled={photos.length >= MAX_IMPORT_PHOTOS}
+                onChange={handlePhotoUpload}
+              />
+            </label>
+
+            {photos.length > 0 && (
+              <div className="photo-list">
+                {photos.map((photo, index) => (
+                  <div className="photo-item" key={`${photo.name}-${index}`}>
+                    <img src={photo.dataUrl} alt="" />
+                    <div>
+                      <strong>{photo.name || `Recipe photo ${index + 1}`}</strong>
+                      <span>{fileSizeLabel(photo.size)}</span>
+                    </div>
+                    <button className="icon-button" type="button" title="Remove photo" onClick={() => removePhoto(index)}>
+                      <Trash2 size={17} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {mode === 'ai' && (
           <label className="toggle-row toddler-toggle">
@@ -888,8 +1025,12 @@ function ImportPage() {
           </div>
         ))}
 
-        <button className="primary-button wide" type="submit" disabled={loading || !url.trim()}>
-          {loading ? <Loader2 className="spin" size={18} /> : <LinkIcon size={18} />}
+        <button
+          className="primary-button wide"
+          type="submit"
+          disabled={loading || (sourceType === 'url' ? !url.trim() : !photos.length)}
+        >
+          {loading ? <Loader2 className="spin" size={18} /> : sourceType === 'photos' ? <UploadCloud size={18} /> : <LinkIcon size={18} />}
           Import recipe
         </button>
       </form>

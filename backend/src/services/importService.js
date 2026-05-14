@@ -1,10 +1,16 @@
 import * as cheerio from 'cheerio';
 import { badRequest } from '../errors.js';
 import { createRecipe } from './recipeStore.js';
-import { createToddlerRecipeWithOpenAi, normalizeRecipeWithOpenAi } from './aiService.js';
+import {
+  createToddlerRecipeWithOpenAi,
+  normalizeRecipeFromPhotosWithOpenAi,
+  normalizeRecipeWithOpenAi
+} from './aiService.js';
 import { parseDurationToMinutes } from '../utils/duration.js';
 import { uniqueStrings } from '../utils/slug.js';
 import { recipeInputSchema } from '../validation.js';
+
+const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
 
 function cleanText(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
@@ -201,6 +207,27 @@ export async function fetchRecipePage(url) {
   return response.text();
 }
 
+function normalizePhotoUpload(photo, index) {
+  const match = String(photo.dataUrl || '').match(/^data:image\/(jpeg|jpg|png|webp);base64,([a-z0-9+/=\s]+)$/i);
+  if (!match) {
+    throw badRequest(`Photo ${index + 1} must be a PNG, JPEG, or WebP image`);
+  }
+
+  const type = match[1].toLowerCase() === 'jpg' ? 'jpeg' : match[1].toLowerCase();
+  const base64 = match[2].replace(/\s+/g, '');
+  const sizeBytes = Buffer.byteLength(base64, 'base64');
+  if (sizeBytes > MAX_PHOTO_BYTES) {
+    throw badRequest(`Photo ${index + 1} is too large. Upload photos up to 4 MB each.`);
+  }
+
+  return {
+    name: cleanText(photo.name) || `Recipe photo ${index + 1}`,
+    type: `image/${type}`,
+    sizeBytes,
+    dataUrl: `data:image/${type};base64,${base64}`
+  };
+}
+
 export async function importRecipeFromUrl({ url, mode, createToddlerVersion = false }) {
   const html = await fetchRecipePage(url);
   const { extracted, sourceText } = extractRecipeFromHtml(html, url);
@@ -240,5 +267,34 @@ export async function importRecipeFromUrl({ url, mode, createToddlerVersion = fa
         : []),
       ...toddlerWarnings
     ]
+  };
+}
+
+export async function importRecipeFromPhotos({ photos, createToddlerVersion = false }) {
+  const normalizedPhotos = photos.map(normalizePhotoUpload);
+  const result = await normalizeRecipeFromPhotosWithOpenAi({ photos: normalizedPhotos });
+  const recipe = await createRecipe({
+    ...result.recipe,
+    llmUsage: result.llmUsage
+  });
+
+  let toddlerRecipe = null;
+  const toddlerWarnings = [];
+
+  if (createToddlerVersion) {
+    try {
+      const toddlerResult = await createToddlerRecipeWithOpenAi({ sourceRecipe: recipe, sourceUrl: '' });
+      toddlerRecipe = await createRecipe(toddlerResult.recipe);
+      toddlerWarnings.push(...toddlerResult.warnings);
+    } catch (error) {
+      toddlerWarnings.push(`Toddler helper recipe was not created: ${error.message}`);
+    }
+  }
+
+  return {
+    recipe,
+    toddlerRecipe,
+    importMode: 'ai',
+    warnings: toddlerWarnings
   };
 }

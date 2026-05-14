@@ -14,12 +14,23 @@ The recipe opens automatically after saving.
 ## Import a Recipe from a URL
 
 1. Open `Import from URL`.
-2. Paste the recipe page URL.
-3. Choose `Verbatim import` or `ChatGPT processed import`.
-4. If using `ChatGPT processed import`, optionally enable `Create toddler helper version with AI step images`.
-5. Select `Import recipe`.
+2. Choose `Recipe URL`.
+3. Paste the recipe page URL.
+4. Choose `Verbatim import` or `ChatGPT processed import`.
+5. If using `ChatGPT processed import`, optionally enable `Create toddler helper version with AI step images`.
+6. Select `Import recipe`.
 
 The app fetches the page on the backend, extracts recipe metadata where possible, and saves the result to the database.
+
+## Import a Recipe from Photos
+
+1. Open `Import from URL`.
+2. Choose `Recipe photos`.
+3. Upload one to five PNG, JPEG, or WebP photos.
+4. Optionally enable `Create toddler helper version with AI step images`.
+5. Select `Import recipe`.
+
+Photo import requires AI processing to be enabled and an OpenAI API key to be configured. The backend sends the photos to the configured model, extracts visible recipe text, normalizes the recipe, converts units to metric, and rejects photos that do not contain an edible food cooking recipe.
 
 ## Verbatim Import vs AI-Processed Import
 
@@ -28,6 +39,8 @@ The app fetches the page on the backend, extracts recipe metadata where possible
 `ChatGPT processed import` sends the extracted recipe content to the configured OpenAI API. It asks the model to remove blog/story content, normalize the recipe into the TL Recipe Core structure, convert units to metric, keep temperatures in Celsius, and return structured JSON before saving.
 
 AI-processed import is only for edible food cooking recipes. Imported page content is treated as untrusted data, so hidden text, metadata, comments, scripts, and instructions aimed at AI agents are ignored. Pages that are not food recipes are rejected instead of saved.
+
+`Recipe photos` always use AI-processed import. Text visible in the uploaded photos is also treated as untrusted source data, so printed instructions aimed at AI agents are ignored.
 
 If AI processing fails, the app shows an error and does not create a partial recipe.
 
