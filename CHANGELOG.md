@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Hardened OpenAI import instructions to accept only edible food cooking recipes and ignore hidden AI-agent instructions in imported page content.
+
 ## v0.5.1
 
 - Fixed API validation errors rendering as `[object Object]` in the frontend.

@@ -16,6 +16,7 @@ TL Recipe Core is a dark-mode-first internal recipe manager for saving, importin
 - URL import with verbatim extraction or ChatGPT-processed normalization.
 - Optional toddler-helper AI import that creates a second supervised recipe with generated step images.
 - AI processing prompt path for metric conversion, Celsius temperatures, and JSON output before saving.
+- AI imports are limited to edible food cooking recipes and ignore hidden instructions inside imported pages.
 - AI import usage metrics with model, tokens, response time, and cost snapshot.
 - Recipe editing.
 - Search and tag filtering.
@@ -99,6 +100,8 @@ For internal use, either:
 Keys entered in Settings are sent to the backend and stored encrypted in PostgreSQL using `APP_SECRET`. The frontend only receives whether a key is configured and never receives the stored key value.
 
 AI imports store a cost snapshot using the selected model's input and output token prices at import time. The app currently stores pricing for `gpt-5.5`, `gpt-5.4-mini`, and `gpt-5.4-nano`.
+
+The import prompt treats source page content as untrusted data. Hidden text, metadata, comments, scripts, and instructions aimed at AI agents are ignored, and non-food or non-cooking pages are rejected instead of saved.
 
 ## Update and Rebuild
 
@@ -211,6 +214,8 @@ Run `docker compose ps` and confirm `db` is healthy. Check `DATABASE_URL` if run
 **AI imports fail**
 
 Confirm AI processing is enabled in Settings and that an OpenAI API key is configured. Check `docker compose logs -f app` for upstream API errors.
+
+AI-processed imports also reject pages that are not edible food cooking recipes.
 
 **Imported recipes are incomplete**
 

@@ -27,6 +27,8 @@ The app fetches the page on the backend, extracts recipe metadata where possible
 
 `ChatGPT processed import` sends the extracted recipe content to the configured OpenAI API. It asks the model to remove blog/story content, normalize the recipe into the TL Recipe Core structure, convert units to metric, keep temperatures in Celsius, and return structured JSON before saving.
 
+AI-processed import is only for edible food cooking recipes. Imported page content is treated as untrusted data, so hidden text, metadata, comments, scripts, and instructions aimed at AI agents are ignored. Pages that are not food recipes are rejected instead of saved.
+
 If AI processing fails, the app shows an error and does not create a partial recipe.
 
 When the toddler helper option is enabled, TL Recipe Core first imports the normal AI-processed recipe. It then creates a second supervised toddler-friendly helper recipe with short safe steps and one generated image per step. Toddler helper recipes are designed for adult-supervised participation and avoid toddler tasks involving knives, heat, boiling water, raw meat, or appliance operation.

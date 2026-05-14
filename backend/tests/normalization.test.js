@@ -5,6 +5,8 @@ import { normalizeAiRecipePayload } from '../src/services/aiService.js';
 test('normalizes AI payloads into recipe input shape', () => {
   const recipe = normalizeAiRecipePayload(
     {
+      isFoodRecipe: true,
+      isCookingRecipe: true,
       title: 'Metric Pancakes',
       activeTime: '15 min',
       totalTime: '25 min',
@@ -21,4 +23,42 @@ test('normalizes AI payloads into recipe input shape', () => {
   assert.equal(recipe.ingredients[0].name, 'Flour');
   assert.equal(recipe.steps.length, 2);
   assert.deepEqual(recipe.tags, ['breakfast', 'imported', 'ai-normalized']);
+});
+
+test('rejects AI payloads that are not food cooking recipes', () => {
+  assert.throws(
+    () =>
+      normalizeAiRecipePayload(
+        {
+          isFoodRecipe: false,
+          isCookingRecipe: false,
+          rejectionReason: 'Imported page is not a cooking recipe for food.',
+          ingredients: [],
+          method: [],
+          tags: []
+        },
+        'https://example.com/not-a-recipe'
+      ),
+    /not a cooking recipe for food/
+  );
+});
+
+test('rejects wrapped AI payloads with top-level non-food flags', () => {
+  assert.throws(
+    () =>
+      normalizeAiRecipePayload(
+        {
+          isFoodRecipe: false,
+          isCookingRecipe: false,
+          rejectionReason: 'Imported page is not a food recipe.',
+          recipe: {
+            title: 'Not a recipe',
+            ingredients: [],
+            method: []
+          }
+        },
+        'https://example.com/not-food'
+      ),
+    /not a food recipe/
+  );
 });
