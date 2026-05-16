@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -12,6 +12,7 @@ import {
   Image,
   KeyRound,
   Layers,
+  Languages,
   Link as LinkIcon,
   Loader2,
   Plus,
@@ -35,6 +36,238 @@ const MAX_IMPORT_PHOTOS = 5;
 const MAX_IMPORT_PHOTO_BYTES = 4 * 1024 * 1024;
 const IMPORT_PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const AUTH_SESSION_KEY = 'tl_recipe_core_management_auth';
+const FALLBACK_LANGUAGE_OPTIONS = [
+  { code: 'en', label: 'English' },
+  { code: 'de', label: 'Deutsch' },
+  { code: 'af', label: 'Afrikaans' }
+];
+
+const EN_MESSAGES = {
+  recipes: 'Recipes',
+  addRecipe: 'Add Recipe',
+  importRecipe: 'Import from URL',
+  tagsSearch: 'Tags / Search',
+  settings: 'Settings',
+  saasManagement: 'SaaS Management',
+  recipeLibrary: 'Recipe library',
+  add: 'Add',
+  searchPlaceholder: 'Search recipes, ingredients, descriptions',
+  categories: 'Categories',
+  tags: 'Tags',
+  allCategories: 'All categories',
+  allTags: 'All tags',
+  noRecipesFound: 'No recipes found',
+  edit: 'Edit',
+  delete: 'Delete',
+  manualRecipe: 'Manual recipe',
+  sourceRecipe: 'Source recipe',
+  ingredients: 'Ingredients',
+  method: 'Method',
+  importStats: 'Import stats',
+  aiImportUsage: 'AI import usage',
+  model: 'Model',
+  inputTokens: 'Input tokens',
+  outputTokens: 'Output tokens',
+  responseTime: 'Response time',
+  estimatedCost: 'Estimated cost',
+  stepImages: 'Step images',
+  original: 'Original',
+  userSettings: 'User settings',
+  general: 'General',
+  llm: 'LLM',
+  backup: 'Backup',
+  defaultLanguage: 'Default language',
+  defaultUnitSystem: 'Default unit system',
+  categoryFilters: 'Recipe category filters',
+  addCategory: 'Add category',
+  saveSettings: 'Save settings',
+  saved: 'Saved',
+  publicBrowsing: 'Public browsing',
+  signInWhenNeeded: 'Sign in when needed',
+  managementUnlocked: 'Management unlocked',
+  basicAuthActive: 'Basic Auth active',
+  recipeLanguage: 'Recipe language',
+  originalRecipe: 'Original recipe',
+  recipeTranslations: 'Recipe translations',
+  generateMissingTranslations: 'Generate missing translations',
+  translationMissing: 'This recipe is not translated to the selected language yet.'
+};
+
+const I18nContext = createContext({
+  language: 'en',
+  preferences: { categoryFilters: [] },
+  setPreferences: () => {},
+  t: (key) => EN_MESSAGES[key] || key
+});
+
+const MESSAGES = {
+  en: EN_MESSAGES,
+  de: {
+    recipes: 'Rezepte',
+    addRecipe: 'Rezept hinzufügen',
+    importRecipe: 'Aus URL importieren',
+    tagsSearch: 'Tags / Suche',
+    settings: 'Einstellungen',
+    saasManagement: 'SaaS-Verwaltung',
+    recipeLibrary: 'Rezeptbibliothek',
+    add: 'Hinzufügen',
+    searchPlaceholder: 'Rezepte, Zutaten, Beschreibungen suchen',
+    categories: 'Kategorien',
+    tags: 'Tags',
+    allCategories: 'Alle Kategorien',
+    allTags: 'Alle Tags',
+    noRecipesFound: 'Keine Rezepte gefunden',
+    edit: 'Bearbeiten',
+    delete: 'Löschen',
+    manualRecipe: 'Manuelles Rezept',
+    sourceRecipe: 'Originalrezept',
+    ingredients: 'Zutaten',
+    method: 'Zubereitung',
+    importStats: 'Importstatistik',
+    aiImportUsage: 'KI-Importnutzung',
+    model: 'Modell',
+    inputTokens: 'Eingabe-Token',
+    outputTokens: 'Ausgabe-Token',
+    responseTime: 'Antwortzeit',
+    estimatedCost: 'Geschätzte Kosten',
+    stepImages: 'Schrittbilder',
+    original: 'Original',
+    userSettings: 'Benutzereinstellungen',
+    general: 'Allgemein',
+    llm: 'LLM',
+    backup: 'Backup',
+    defaultLanguage: 'Standardsprache',
+    defaultUnitSystem: 'Standard-Einheitensystem',
+    categoryFilters: 'Rezept-Kategoriefilter',
+    addCategory: 'Kategorie hinzufügen',
+    saveSettings: 'Einstellungen speichern',
+    saved: 'Gespeichert',
+    publicBrowsing: 'Öffentliches Browsen',
+    signInWhenNeeded: 'Bei Bedarf anmelden',
+    managementUnlocked: 'Verwaltung entsperrt',
+    basicAuthActive: 'Basic Auth aktiv',
+    recipeLanguage: 'Rezeptsprache',
+    originalRecipe: 'Originalrezept',
+    recipeTranslations: 'Rezeptübersetzungen',
+    generateMissingTranslations: 'Fehlende Übersetzungen erstellen',
+    translationMissing: 'Dieses Rezept ist noch nicht in die ausgewählte Sprache übersetzt.'
+  },
+  af: {
+    recipes: 'Resepte',
+    addRecipe: 'Voeg resep by',
+    importRecipe: 'Voer vanaf URL in',
+    tagsSearch: 'Etikette / Soek',
+    settings: 'Instellings',
+    saasManagement: 'SaaS-bestuur',
+    recipeLibrary: 'Resepbiblioteek',
+    add: 'Voeg by',
+    searchPlaceholder: 'Soek resepte, bestanddele, beskrywings',
+    categories: 'Kategorieë',
+    tags: 'Etikette',
+    allCategories: 'Alle kategorieë',
+    allTags: 'Alle etikette',
+    noRecipesFound: 'Geen resepte gevind nie',
+    edit: 'Wysig',
+    delete: 'Verwyder',
+    manualRecipe: 'Handresep',
+    sourceRecipe: 'Bronresep',
+    ingredients: 'Bestanddele',
+    method: 'Metode',
+    importStats: 'Invoerstatistiek',
+    aiImportUsage: 'KI-invoergebruik',
+    model: 'Model',
+    inputTokens: 'Invoer-tokens',
+    outputTokens: 'Uitvoer-tokens',
+    responseTime: 'Reaksietyd',
+    estimatedCost: 'Geskatte koste',
+    stepImages: 'Stapbeelde',
+    original: 'Oorspronklik',
+    userSettings: 'Gebruikerinstellings',
+    general: 'Algemeen',
+    llm: 'LLM',
+    backup: 'Rugsteun',
+    defaultLanguage: 'Standaardtaal',
+    defaultUnitSystem: 'Standaard eenheidstelsel',
+    categoryFilters: 'Resep-kategoriefilters',
+    addCategory: 'Voeg kategorie by',
+    saveSettings: 'Stoor instellings',
+    saved: 'Gestoor',
+    publicBrowsing: 'Publieke blaai',
+    signInWhenNeeded: 'Meld aan wanneer nodig',
+    managementUnlocked: 'Bestuur ontsluit',
+    basicAuthActive: 'Basic Auth aktief',
+    recipeLanguage: 'Reseptaal',
+    originalRecipe: 'Oorspronklike resep',
+    recipeTranslations: 'Resepvertalings',
+    generateMissingTranslations: 'Skep ontbrekende vertalings',
+    translationMissing: 'Hierdie resep is nog nie in die gekose taal vertaal nie.'
+  }
+};
+
+const CATEGORY_TRANSLATIONS = {
+  Starters: { en: 'Starters', de: 'Vorspeisen', af: 'Voorgeregte' },
+  Mains: { en: 'Mains', de: 'Hauptgerichte', af: 'Hoofgeregte' },
+  Desserts: { en: 'Desserts', de: 'Desserts', af: 'Nageregte' },
+  Drinks: { en: 'Drinks', de: 'Getränke', af: 'Drankies' },
+  Cookies: { en: 'Cookies', de: 'Kekse', af: 'Koekies' },
+  Cakes: { en: 'Cakes', de: 'Kuchen', af: 'Koeke' },
+  Tarts: { en: 'Tarts', de: 'Tartes', af: 'Terte' },
+  Vegan: { en: 'Vegan', de: 'Vegan', af: 'Vegan' },
+  Vegetarian: { en: 'Vegetarian', de: 'Vegetarisch', af: 'Vegetaries' },
+  'Sugar Free': { en: 'Sugar Free', de: 'Zuckerfrei', af: 'Suikervry' },
+  'One-Pot': { en: 'One-Pot', de: 'Eintopf', af: 'Eenpot' }
+};
+
+function useI18n() {
+  return useContext(I18nContext);
+}
+
+function translateCategoryName(name, language) {
+  return CATEGORY_TRANSLATIONS[name]?.[language] || name;
+}
+
+function languageOptions(preferences) {
+  return preferences?.supportedLanguages?.length ? preferences.supportedLanguages : FALLBACK_LANGUAGE_OPTIONS;
+}
+
+function translatedTags(recipe, language) {
+  if (language === 'original') return tagNames(recipe);
+  const translated = recipe.translations?.[language]?.tags || [];
+  const baseTags = tagNames(recipe);
+  return baseTags.map((tag, index) => translateCategoryName(translated[index] || tag, language));
+}
+
+function displayRecipe(recipe, language) {
+  if (language === 'original') return recipe;
+  const translation = recipe?.translations?.[language];
+  if (!translation) return recipe;
+
+  return {
+    ...recipe,
+    title: translation.title || recipe.title,
+    shortDescription: translation.shortDescription || recipe.shortDescription,
+    ingredients: recipe.ingredients.map((ingredient, index) => {
+      const translated = translation.ingredients?.[index];
+      if (!translated) return ingredient;
+      return {
+        ...ingredient,
+        name: translated.name || ingredient.name,
+        quantity: translated.quantity || ingredient.quantity,
+        unit: translated.unit || ingredient.unit,
+        notes: translated.notes || ingredient.notes,
+        originalQuantity: ingredient.originalQuantity || translated.originalQuantity || '',
+        originalUnit: ingredient.originalUnit || translated.originalUnit || '',
+        originalText: ingredient.originalText || translated.originalText || ''
+      };
+    }),
+    steps: recipe.steps.map((step, index) => ({
+      ...step,
+      ...(translation.steps?.[index] || {}),
+      imageUrl: step.imageUrl || translation.steps?.[index]?.imageUrl || '',
+      imagePrompt: step.imagePrompt || translation.steps?.[index]?.imagePrompt || ''
+    }))
+  };
+}
 
 function getStoredAuthHeader() {
   try {
@@ -109,7 +342,7 @@ function fileSizeLabel(bytes) {
 }
 
 function tagNames(recipe) {
-  return (recipe.tags || []).map((tag) => (typeof tag === 'string' ? tag : tag.name));
+  return (recipe.tags || []).map((tag) => (typeof tag === 'string' ? tag : tag.categoryName || tag.name));
 }
 
 function MultiSelectDropdown({
@@ -240,36 +473,37 @@ function TimeMeta({ recipe }) {
 }
 
 function LlmUsageCard({ usage }) {
+  const { t } = useI18n();
   if (!usage) return null;
 
   return (
     <section className="content-block usage-card">
-      <p className="eyebrow">Import stats</p>
-      <h2>AI import usage</h2>
+      <p className="eyebrow">{t('importStats')}</p>
+      <h2>{t('aiImportUsage')}</h2>
       <div className="metric-grid">
         <div>
-          <span>Model</span>
+          <span>{t('model')}</span>
           <strong>{usage.model}</strong>
         </div>
         <div>
-          <span>Input tokens</span>
+          <span>{t('inputTokens')}</span>
           <strong>{numberLabel(usage.inputTokens)}</strong>
         </div>
         <div>
-          <span>Output tokens</span>
+          <span>{t('outputTokens')}</span>
           <strong>{numberLabel(usage.outputTokens)}</strong>
         </div>
         <div>
-          <span>Response time</span>
+          <span>{t('responseTime')}</span>
           <strong>{numberLabel(usage.responseMs)} ms</strong>
         </div>
         <div>
-          <span>Estimated cost</span>
+          <span>{t('estimatedCost')}</span>
           <strong>{moneyLabel(usage.totalCostUsd)}</strong>
         </div>
         {usage.imageCount > 0 && (
           <div>
-            <span>Step images</span>
+            <span>{t('stepImages')}</span>
             <strong>
               {numberLabel(usage.imageCount)} · {moneyLabel(usage.imageCostUsd)}
             </strong>
@@ -293,17 +527,21 @@ function RecipeImage({ recipe }) {
 }
 
 function RecipeCard({ recipe }) {
+  const { language } = useI18n();
+  const shownRecipe = displayRecipe(recipe, language);
+  const shownTags = translatedTags(recipe, language);
+
   return (
     <a className="recipe-card" href={`#/recipes/${recipe.id}`}>
       <div className="recipe-card-image">
         <RecipeImage recipe={recipe} />
       </div>
       <div className="recipe-card-body">
-        <h3>{recipe.title}</h3>
-        <p>{recipe.shortDescription || 'No short description yet.'}</p>
+        <h3>{shownRecipe.title}</h3>
+        <p>{shownRecipe.shortDescription || 'No short description yet.'}</p>
         <TimeMeta recipe={recipe} />
         <div className="tag-row">
-          {tagNames(recipe)
+          {shownTags
             .slice(0, 4)
             .map((tag) => (
               <span className="tag-chip" key={tag}>
@@ -317,13 +555,14 @@ function RecipeCard({ recipe }) {
 }
 
 function AppNav({ route, managementUnlocked, onManagementSignOut }) {
+  const { t } = useI18n();
   const items = [
-    { path: '/recipes', label: 'Recipes', icon: Utensils },
-    { path: '/add', label: 'Add Recipe', icon: Plus },
-    { path: '/import', label: 'Import from URL', icon: LinkIcon },
-    { path: '/tags', label: 'Tags / Search', icon: Tags },
-    { path: '/settings', label: 'Settings', icon: Settings },
-    ...(isAdminUser ? [{ path: '/saas', label: 'SaaS Management', icon: ShieldCheck }] : [])
+    { path: '/recipes', label: t('recipes'), icon: Utensils },
+    { path: '/add', label: t('addRecipe'), icon: Plus },
+    { path: '/import', label: t('importRecipe'), icon: LinkIcon },
+    { path: '/tags', label: t('tagsSearch'), icon: Tags },
+    { path: '/settings', label: t('settings'), icon: Settings },
+    ...(isAdminUser ? [{ path: '/saas', label: t('saasManagement'), icon: ShieldCheck }] : [])
   ];
 
   return (
@@ -352,8 +591,8 @@ function AppNav({ route, managementUnlocked, onManagementSignOut }) {
           <ShieldCheck size={17} />
         </div>
         <div>
-          <strong>{managementUnlocked ? 'Management unlocked' : 'Public browsing'}</strong>
-          <small>{managementUnlocked ? 'Basic Auth active' : 'Sign in when needed'}</small>
+          <strong>{managementUnlocked ? t('managementUnlocked') : t('publicBrowsing')}</strong>
+          <small>{managementUnlocked ? t('basicAuthActive') : t('signInWhenNeeded')}</small>
         </div>
         {managementUnlocked && (
           <button className="icon-button account-signout" type="button" title="Sign out" onClick={onManagementSignOut}>
@@ -366,10 +605,12 @@ function AppNav({ route, managementUnlocked, onManagementSignOut }) {
 }
 
 function RecipesPage() {
+  const { preferences, language, t } = useI18n();
   const [recipes, setRecipes] = useState([]);
   const [tags, setTags] = useState([]);
   const [search, setSearch] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -379,7 +620,7 @@ function RecipesPage() {
     setError('');
 
     Promise.all([
-      api.listRecipes({ search, tags: selectedTags }),
+      api.listRecipes({ search, tags: selectedTags, categories: selectedCategories }),
       api.listTags()
     ])
       .then(([recipesPayload, tagsPayload]) => {
@@ -393,18 +634,18 @@ function RecipesPage() {
     return () => {
       active = false;
     };
-  }, [search, selectedTags]);
+  }, [search, selectedTags, selectedCategories]);
 
   return (
     <section className="view">
       <div className="view-header">
         <div>
           <p className="eyebrow">Recipes</p>
-          <h1>Recipe library</h1>
+          <h1>{t('recipeLibrary')}</h1>
         </div>
         <button className="primary-button" type="button" onClick={() => navigate('/add')}>
           <Plus size={18} />
-          Add
+          {t('add')}
         </button>
       </div>
 
@@ -414,15 +655,32 @@ function RecipesPage() {
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search recipes, ingredients, descriptions"
+            placeholder={t('searchPlaceholder')}
           />
         </label>
         <MultiSelectDropdown
-          label="Tags"
-          options={tags.map((tag) => ({ value: tag.slug, label: tag.name, count: tag.recipeCount }))}
+          label={t('categories')}
+          options={(preferences.categoryFilters || []).map((category) => ({
+            value: category,
+            label: translateCategoryName(category, language)
+          }))}
+          selectedValues={selectedCategories}
+          onChange={setSelectedCategories}
+          placeholder={t('allCategories')}
+          emptyText="No categories configured"
+        />
+        <MultiSelectDropdown
+          label={t('tags')}
+          options={tags
+            .filter((tag) => !tag.isCategory)
+            .map((tag) => ({
+              value: tag.slug,
+              label: tag.name,
+              count: tag.recipeCount
+            }))}
           selectedValues={selectedTags}
           onChange={setSelectedTags}
-          placeholder="All tags"
+          placeholder={t('allTags')}
           emptyText="No tags available"
         />
       </div>
@@ -431,7 +689,7 @@ function RecipesPage() {
         loading={loading}
         error={error}
         empty={!recipes.length}
-        emptyText="No recipes found"
+        emptyText={t('noRecipesFound')}
         emptyChecklist={['Add a recipe manually', 'Import from a URL or photos', 'Tag recipes for faster filtering']}
         emptyActionLabel="Add recipe"
         onEmptyAction={() => navigate('/add')}
@@ -447,9 +705,13 @@ function RecipesPage() {
 }
 
 function RecipeDetailPage({ id }) {
+  const { preferences, t } = useI18n();
   const [recipe, setRecipe] = useState(null);
+  const [recipeLanguage, setRecipeLanguage] = useState('original');
   const [loading, setLoading] = useState(true);
+  const [translating, setTranslating] = useState(false);
   const [error, setError] = useState('');
+  const [translationError, setTranslationError] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -470,6 +732,27 @@ function RecipeDetailPage({ id }) {
     navigate('/recipes');
   }
 
+  async function generateMissingTranslations() {
+    const missingLanguages = languageOptions(preferences)
+      .map((option) => option.code)
+      .filter((code) => !recipe.translations?.[code]);
+    if (!missingLanguages.length) return;
+
+    setTranslating(true);
+    setTranslationError('');
+    try {
+      const payload = await api.translateRecipe(recipe.id, missingLanguages);
+      setRecipe(payload.recipe);
+      if (recipeLanguage === 'original' && payload.translatedLanguages?.[0]) {
+        setRecipeLanguage(payload.translatedLanguages[0]);
+      }
+    } catch (err) {
+      setTranslationError(err.message);
+    } finally {
+      setTranslating(false);
+    }
+  }
+
   if (loading || error || !recipe) {
     return (
       <section className="view">
@@ -478,21 +761,30 @@ function RecipeDetailPage({ id }) {
     );
   }
 
+  const selectedRecipeLanguage = recipeLanguage === 'original' ? 'original' : recipeLanguage;
+  const shownRecipe = displayRecipe(recipe, selectedRecipeLanguage);
+  const shownTags = translatedTags(recipe, selectedRecipeLanguage);
+  const missingSelectedTranslation =
+    recipeLanguage !== 'original' && !recipe.translations?.[recipeLanguage];
+  const missingTranslationCount = languageOptions(preferences).filter(
+    (option) => !recipe.translations?.[option.code]
+  ).length;
+
   return (
     <section className="view detail-view">
       <div className="view-header">
         <button className="ghost-button" type="button" onClick={() => navigate('/recipes')}>
           <ArrowLeft size={18} />
-          Recipes
+          {t('recipes')}
         </button>
         <div className="header-actions">
           <button className="secondary-button" type="button" onClick={() => navigate(`/recipes/${recipe.id}/edit`)}>
             <Settings size={18} />
-            Edit
+            {t('edit')}
           </button>
           <button className="danger-button" type="button" onClick={handleDelete}>
             <Trash2 size={18} />
-            Delete
+            {t('delete')}
           </button>
         </div>
       </div>
@@ -502,21 +794,46 @@ function RecipeDetailPage({ id }) {
           <RecipeImage recipe={recipe} />
         </div>
         <div className="detail-copy">
-          <p className="eyebrow">{recipe.importMode === 'manual' ? 'Manual recipe' : `${recipe.importMode} import`}</p>
-          <h1>{recipe.title}</h1>
-          <p>{recipe.shortDescription || 'No short description yet.'}</p>
+          <p className="eyebrow">{recipe.importMode === 'manual' ? t('manualRecipe') : `${recipe.importMode} import`}</p>
+          <h1>{shownRecipe.title}</h1>
+          <p>{shownRecipe.shortDescription || 'No short description yet.'}</p>
           <TimeMeta recipe={recipe} />
           <div className="tag-row">
-            {tagNames(recipe).map((tag) => (
+            {shownTags.map((tag) => (
               <span className="tag-chip" key={tag}>
                 {tag}
               </span>
             ))}
           </div>
+          <div className="translation-panel">
+            <label className="field compact-field">
+              <span>{t('recipeLanguage')}</span>
+              <select value={recipeLanguage} onChange={(event) => setRecipeLanguage(event.target.value)}>
+                <option value="original">{t('originalRecipe')}</option>
+                {languageOptions(preferences).map((option) => (
+                  <option value={option.code} key={option.code}>
+                    {option.label}
+                    {recipe.translations?.[option.code] ? '' : ' (missing)'}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={generateMissingTranslations}
+              disabled={translating || missingTranslationCount === 0}
+            >
+              {translating ? <Loader2 className="spin" size={18} /> : <Languages size={18} />}
+              {t('generateMissingTranslations')}
+            </button>
+          </div>
+          {missingSelectedTranslation && <div className="state compact">{t('translationMissing')}</div>}
+          {translationError && <div className="state error compact">{translationError}</div>}
           {recipe.sourceUrl && (
             <a className="source-link" href={recipe.sourceUrl} target="_blank" rel="noreferrer">
               <LinkIcon size={16} />
-              Source recipe
+              {t('sourceRecipe')}
             </a>
           )}
         </div>
@@ -524,9 +841,9 @@ function RecipeDetailPage({ id }) {
 
       <div className="detail-grid">
         <section className="content-block">
-          <h2>Ingredients</h2>
+          <h2>{t('ingredients')}</h2>
           <ul className="ingredient-list">
-            {recipe.ingredients.map((ingredient, index) => (
+            {shownRecipe.ingredients.map((ingredient, index) => (
               <li key={`${ingredient.name}-${index}`}>
                 <strong>
                   {[ingredient.quantity, ingredient.unit].filter(Boolean).join(' ')}
@@ -535,7 +852,7 @@ function RecipeDetailPage({ id }) {
                 </strong>
                 {(ingredient.originalText || ingredient.originalQuantity || ingredient.originalUnit) && (
                   <span>
-                    Original:{' '}
+                    {t('original')}:{' '}
                     {ingredient.originalText ||
                       [ingredient.originalQuantity, ingredient.originalUnit].filter(Boolean).join(' ')}
                   </span>
@@ -547,9 +864,9 @@ function RecipeDetailPage({ id }) {
         </section>
 
         <section className="content-block">
-          <h2>Method</h2>
+          <h2>{t('method')}</h2>
           <ol className="step-list">
-            {recipe.steps.map((step, index) => (
+            {shownRecipe.steps.map((step, index) => (
               <li className={step.imageUrl ? 'illustrated-step' : ''} key={`${step.text}-${index}`}>
                 {step.imageUrl && <img src={step.imageUrl} alt="" loading="lazy" />}
                 <span>{step.text}</span>
@@ -646,6 +963,7 @@ function toNumberOrNull(value) {
 }
 
 function AddRecipePage({ recipeId = null }) {
+  const { preferences, language } = useI18n();
   const steps = ['Basic info', 'Ingredients', 'Method', 'Tags', 'Review'];
   const isEditing = Boolean(recipeId);
   const [stepIndex, setStepIndex] = useState(0);
@@ -662,7 +980,8 @@ function AddRecipePage({ recipeId = null }) {
     totalTimeMinutes: '',
     ingredients: [{ ...emptyIngredient }],
     steps: [{ ...emptyStep }],
-    tags: []
+    tags: [],
+    translations: {}
   });
 
   useEffect(() => {
@@ -684,7 +1003,8 @@ function AddRecipePage({ recipeId = null }) {
             totalTimeMinutes: loaded.totalTimeMinutes ?? '',
             ingredients: loaded.ingredients?.length ? loaded.ingredients : [{ ...emptyIngredient }],
             steps: loaded.steps?.length ? loaded.steps : [{ ...emptyStep }],
-            tags: tagNames(loaded)
+            tags: tagNames(loaded),
+            translations: loaded.translations || {}
           });
         }
       })
@@ -923,7 +1243,15 @@ function AddRecipePage({ recipeId = null }) {
           <div className="stack">
             <MultiSelectDropdown
               label="Existing tags"
-              options={existingTags.map((tag) => ({ value: tag.name, label: tag.name, count: tag.recipeCount }))}
+              options={[
+                ...(preferences.categoryFilters || []).map((category) => ({
+                  value: category,
+                  label: translateCategoryName(category, language)
+                })),
+                ...existingTags
+                  .filter((tag) => !tag.isCategory)
+                  .map((tag) => ({ value: tag.name, label: tag.name, count: tag.recipeCount }))
+              ]}
               selectedValues={recipe.tags}
               onChange={(values) => updateRecipe('tags', values)}
               placeholder="Select tags"
@@ -994,10 +1322,12 @@ function AddRecipePage({ recipeId = null }) {
 }
 
 function ImportPage() {
+  const { preferences, t } = useI18n();
   const [sourceType, setSourceType] = useState('url');
   const [url, setUrl] = useState('');
   const [mode, setMode] = useState('verbatim');
   const [photos, setPhotos] = useState([]);
+  const [translationLanguages, setTranslationLanguages] = useState(FALLBACK_LANGUAGE_OPTIONS.map((option) => option.code));
   const [createToddlerVersion, setCreateToddlerVersion] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -1072,12 +1402,14 @@ function ImportPage() {
         sourceType === 'photos'
           ? await api.importPhotos({
               photos: photos.map(({ name, type, dataUrl }) => ({ name, type, dataUrl })),
-              createToddlerVersion
+              createToddlerVersion,
+              translationLanguages
             })
           : await api.importUrl({
               url,
               mode,
-              createToddlerVersion: mode === 'ai' && createToddlerVersion
+              createToddlerVersion: mode === 'ai' && createToddlerVersion,
+              translationLanguages: mode === 'ai' ? translationLanguages : []
             });
       setWarnings(result.warnings || []);
       navigate(`/recipes/${result.recipe.id}`);
@@ -1188,14 +1520,27 @@ function ImportPage() {
         )}
 
         {mode === 'ai' && (
-          <label className="toggle-row toddler-toggle">
-            <input
-              type="checkbox"
-              checked={createToddlerVersion}
-              onChange={(event) => setCreateToddlerVersion(event.target.checked)}
+          <>
+            <MultiSelectDropdown
+              label={t('recipeTranslations')}
+              options={languageOptions(preferences).map((option) => ({
+                value: option.code,
+                label: option.label
+              }))}
+              selectedValues={translationLanguages}
+              onChange={setTranslationLanguages}
+              placeholder="Original language only"
+              emptyText="No translation languages configured"
             />
-            <span>Create toddler helper version with AI step images</span>
-          </label>
+            <label className="toggle-row toddler-toggle">
+              <input
+                type="checkbox"
+                checked={createToddlerVersion}
+                onChange={(event) => setCreateToddlerVersion(event.target.checked)}
+              />
+              <span>Create toddler helper version with AI step images</span>
+            </label>
+          </>
         )}
 
         {error && <div className="state error">{error}</div>}
@@ -1219,17 +1564,19 @@ function ImportPage() {
 }
 
 function TagsSearchPage() {
+  const { preferences, language, t } = useI18n();
   const [tags, setTags] = useState([]);
   const [recipes, setRecipes] = useState([]);
   const [search, setSearch] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     let active = true;
     setLoading(true);
-    Promise.all([api.listTags(), api.listRecipes({ search, tags: selectedTags })])
+    Promise.all([api.listTags(), api.listRecipes({ search, tags: selectedTags, categories: selectedCategories })])
       .then(([tagPayload, recipePayload]) => {
         if (!active) return;
         setTags(tagPayload.tags);
@@ -1240,13 +1587,13 @@ function TagsSearchPage() {
     return () => {
       active = false;
     };
-  }, [search, selectedTags]);
+  }, [search, selectedTags, selectedCategories]);
 
   return (
     <section className="view">
       <div className="view-header">
         <div>
-          <p className="eyebrow">Tags / Search</p>
+          <p className="eyebrow">{t('tagsSearch')}</p>
           <h1>Find recipes fast</h1>
         </div>
       </div>
@@ -1254,14 +1601,27 @@ function TagsSearchPage() {
       <div className="toolbar search-filter-toolbar">
         <label className="search-box">
           <Search size={18} />
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search library" />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t('searchPlaceholder')} />
         </label>
         <MultiSelectDropdown
-          label="Tags"
-          options={tags.map((tag) => ({ value: tag.slug, label: tag.name, count: tag.recipeCount }))}
+          label={t('categories')}
+          options={(preferences.categoryFilters || []).map((category) => ({
+            value: category,
+            label: translateCategoryName(category, language)
+          }))}
+          selectedValues={selectedCategories}
+          onChange={setSelectedCategories}
+          placeholder={t('allCategories')}
+          emptyText="No categories configured"
+        />
+        <MultiSelectDropdown
+          label={t('tags')}
+          options={tags
+            .filter((tag) => !tag.isCategory)
+            .map((tag) => ({ value: tag.slug, label: tag.name, count: tag.recipeCount }))}
           selectedValues={selectedTags}
           onChange={setSelectedTags}
-          placeholder="All tags"
+          placeholder={t('allTags')}
           emptyText="No tags available"
         />
       </div>
@@ -1283,10 +1643,11 @@ function TagsSearchPage() {
 }
 
 function SettingsPage() {
+  const { setPreferences, t } = useI18n();
   const tabs = [
-    { id: 'general', label: 'General', icon: Settings },
-    { id: 'llm', label: 'LLM', icon: Bot },
-    { id: 'backup', label: 'Backup', icon: DatabaseBackup }
+    { id: 'general', label: t('general'), icon: Settings },
+    { id: 'llm', label: t('llm'), icon: Bot },
+    { id: 'backup', label: t('backup'), icon: DatabaseBackup }
   ];
   const [activeTab, setActiveTab] = useState('general');
   const [settings, setSettings] = useState(null);
@@ -1296,6 +1657,7 @@ function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [importingBackup, setImportingBackup] = useState(false);
+  const [newCategory, setNewCategory] = useState('');
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
 
@@ -1323,12 +1685,19 @@ function SettingsPage() {
         unitSystem: 'metric',
         aiProcessingEnabled: settings.aiProcessingEnabled,
         llmProvider: settings.llmProvider,
-        openaiModel: settings.openaiModel
+        openaiModel: settings.openaiModel,
+        categoryFilters: settings.categoryFilters
       };
       if (apiKey.trim()) body.openaiApiKey = apiKey.trim();
       if (clearKey) body.openaiApiKey = '';
       const payload = await api.updateSettings(body);
       setSettings(payload.settings);
+      setPreferences((current) => ({
+        ...current,
+        defaultLanguage: payload.settings.defaultLanguage,
+        supportedLanguages: payload.settings.supportedLanguages,
+        categoryFilters: payload.settings.categoryFilters
+      }));
       setApiKey('');
       setClearKey(false);
       setSaved(true);
@@ -1384,6 +1753,20 @@ function SettingsPage() {
     }
   }
 
+  function addCategoryFilter() {
+    const cleaned = newCategory.trim();
+    if (!cleaned) return;
+    updateField('categoryFilters', [...(settings.categoryFilters || []), cleaned]);
+    setNewCategory('');
+  }
+
+  function removeCategoryFilter(category) {
+    updateField(
+      'categoryFilters',
+      (settings.categoryFilters || []).filter((item) => item !== category)
+    );
+  }
+
   if (!settings && !error) {
     return (
       <section className="view">
@@ -1406,7 +1789,7 @@ function SettingsPage() {
       <div className="view-header">
         <div>
           <p className="eyebrow">Settings</p>
-          <h1>User settings</h1>
+          <h1>{t('userSettings')}</h1>
         </div>
       </div>
 
@@ -1433,18 +1816,19 @@ function SettingsPage() {
           <div className="surface settings-surface">
             {activeTab === 'general' && (
               <div className="form-grid">
-                <Field label="Default language">
+                <Field label={t('defaultLanguage')}>
                   <select
                     value={settings.defaultLanguage}
                     onChange={(event) => updateField('defaultLanguage', event.target.value)}
                   >
-                    <option value="en">English</option>
-                    <option value="de">German</option>
-                    <option value="fr">French</option>
-                    <option value="it">Italian</option>
+                    {(settings.supportedLanguages || []).map((language) => (
+                      <option value={language.code} key={language.code}>
+                        {language.label}
+                      </option>
+                    ))}
                   </select>
                 </Field>
-                <Field label="Default unit system">
+                <Field label={t('defaultUnitSystem')}>
                   <select value="metric" disabled>
                     <option value="metric">Metric</option>
                   </select>
@@ -1462,6 +1846,33 @@ function SettingsPage() {
                   <div className="setting-status">
                     <Settings size={17} />
                     {appVersion ? `${appVersion.name} ${appVersion.version}` : 'Loading'}
+                  </div>
+                </div>
+                <div className="field category-settings">
+                  <span>{t('categoryFilters')}</span>
+                  <div className="selected-tag-list">
+                    {(settings.categoryFilters || []).map((category) => (
+                      <button
+                        className="tag-remove-chip"
+                        type="button"
+                        key={category}
+                        onClick={() => removeCategoryFilter(category)}
+                      >
+                        <span>{category}</span>
+                        <X size={14} />
+                      </button>
+                    ))}
+                  </div>
+                  <div className="inline-form">
+                    <input
+                      value={newCategory}
+                      onChange={(event) => setNewCategory(event.target.value)}
+                      placeholder={t('addCategory')}
+                    />
+                    <button className="secondary-button" type="button" onClick={addCategoryFilter}>
+                      <Plus size={18} />
+                      {t('add')}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1619,10 +2030,10 @@ function SettingsPage() {
           </div>
 
           <div className="form-actions">
-            {saved && <span className="saved">{saved === true ? 'Saved' : saved}</span>}
+            {saved && <span className="saved">{saved === true ? t('saved') : saved}</span>}
             <button className="primary-button" type="submit" disabled={saving}>
               {saving ? <Loader2 className="spin" size={18} /> : <Save size={18} />}
-              Save settings
+              {t('saveSettings')}
             </button>
           </div>
         </form>
@@ -1672,6 +2083,11 @@ export default function App() {
   const authWaitersRef = useRef([]);
   const [authHeader, setAuthHeader] = useState(initialAuthHeader.current);
   const [authChallenge, setAuthChallenge] = useState(null);
+  const [preferences, setPreferences] = useState({
+    defaultLanguage: 'en',
+    supportedLanguages: FALLBACK_LANGUAGE_OPTIONS,
+    categoryFilters: []
+  });
   const editMatch = route.match(/^\/recipes\/(.+)\/edit$/);
   const recipeMatch = editMatch ? null : route.match(/^\/recipes\/(.+)$/);
 
@@ -1691,6 +2107,29 @@ export default function App() {
       }
     });
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    api
+      .getPreferences()
+      .then((payload) => {
+        if (active) setPreferences(payload.preferences);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const i18nValue = useMemo(() => {
+    const language = preferences.defaultLanguage || 'en';
+    return {
+      language,
+      preferences,
+      setPreferences,
+      t: (key) => MESSAGES[language]?.[key] || EN_MESSAGES[key] || key
+    };
+  }, [preferences]);
 
   function completeManagementLogin(email, password) {
     const header = encodeBasicAuth(email, password);
@@ -1723,18 +2162,20 @@ export default function App() {
   else page = <RecipesPage />;
 
   return (
-    <div className="app-shell">
-      <AppNav
-        route={route}
-        managementUnlocked={Boolean(authHeader)}
-        onManagementSignOut={signOutManagement}
-      />
-      <main className="main-content">{page}</main>
-      <ManagementLoginDialog
-        challenge={authChallenge}
-        onSubmit={completeManagementLogin}
-        onCancel={cancelManagementLogin}
-      />
-    </div>
+    <I18nContext.Provider value={i18nValue}>
+      <div className="app-shell">
+        <AppNav
+          route={route}
+          managementUnlocked={Boolean(authHeader)}
+          onManagementSignOut={signOutManagement}
+        />
+        <main className="main-content">{page}</main>
+        <ManagementLoginDialog
+          challenge={authChallenge}
+          onSubmit={completeManagementLogin}
+          onCancel={cancelManagementLogin}
+        />
+      </div>
+    </I18nContext.Provider>
   );
 }

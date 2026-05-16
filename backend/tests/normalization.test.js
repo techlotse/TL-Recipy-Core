@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizeAiRecipePayload } from '../src/services/aiService.js';
-import { photoImportRequestSchema } from '../src/validation.js';
+import { importRequestSchema, photoImportRequestSchema, recipeTranslationRequestSchema } from '../src/validation.js';
 
 test('normalizes AI payloads into recipe input shape', () => {
   const recipe = normalizeAiRecipePayload(
@@ -13,7 +13,15 @@ test('normalizes AI payloads into recipe input shape', () => {
       totalTime: '25 min',
       ingredients: [{ ingredient: 'Flour', amount: '200', unit: 'g' }],
       method: ['Mix batter.', 'Cook in a pan.'],
-      tags: ['breakfast']
+      tags: ['breakfast'],
+      translations: {
+        af: {
+          title: 'Metriese pannekoeke',
+          ingredients: [{ name: 'Meel', quantity: '200', unit: 'g' }],
+          method: ['Meng die beslag.', "Bak in 'n pan."],
+          tags: ['ontbyt']
+        }
+      }
     },
     'https://example.com/pancakes'
   );
@@ -23,6 +31,8 @@ test('normalizes AI payloads into recipe input shape', () => {
   assert.equal(recipe.totalTimeMinutes, 25);
   assert.equal(recipe.ingredients[0].name, 'Flour');
   assert.equal(recipe.steps.length, 2);
+  assert.equal(recipe.translations.af.ingredients[0].name, 'Meel');
+  assert.equal(recipe.translations.af.steps[0].text, 'Meng die beslag.');
   assert.deepEqual(recipe.tags, ['breakfast', 'imported', 'ai-normalized']);
 });
 
@@ -78,4 +88,16 @@ test('validates photo import upload limits', () => {
     () => photoImportRequestSchema.parse({ photos: Array.from({ length: 6 }, () => photo) }),
     /Upload up to 5 photos/
   );
+});
+
+test('validates requested translation languages', () => {
+  const input = importRequestSchema.parse({
+    url: 'https://example.com/recipe',
+    mode: 'ai',
+    translationLanguages: ['en', 'de', 'af']
+  });
+  assert.deepEqual(input.translationLanguages, ['en', 'de', 'af']);
+
+  assert.deepEqual(recipeTranslationRequestSchema.parse({ languages: ['af', 'de'] }).languages, ['af', 'de']);
+  assert.throws(() => recipeTranslationRequestSchema.parse({ languages: ['fr'] }), /Invalid option/);
 });

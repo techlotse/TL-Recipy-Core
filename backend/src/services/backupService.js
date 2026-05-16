@@ -17,6 +17,7 @@ function recipeToBackup(recipe) {
     totalTimeMinutes: recipe.totalTimeMinutes,
     ingredients: recipe.ingredients,
     steps: recipe.steps,
+    translations: recipe.translations || {},
     tags: (recipe.tags || []).map((tag) => tag.name),
     sourceUrl: recipe.sourceUrl,
     importMode: recipe.importMode

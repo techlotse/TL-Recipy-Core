@@ -228,7 +228,7 @@ function normalizePhotoUpload(photo, index) {
   };
 }
 
-export async function importRecipeFromUrl({ url, mode, createToddlerVersion = false }) {
+export async function importRecipeFromUrl({ url, mode, createToddlerVersion = false, translationLanguages = [] }) {
   const html = await fetchRecipePage(url);
   const { extracted, sourceText } = extractRecipeFromHtml(html, url);
   if (createToddlerVersion && mode !== 'ai') {
@@ -237,7 +237,7 @@ export async function importRecipeFromUrl({ url, mode, createToddlerVersion = fa
 
   const input =
     mode === 'ai'
-      ? await normalizeRecipeWithOpenAi({ sourceUrl: url, extracted, sourceText }).then((result) => ({
+      ? await normalizeRecipeWithOpenAi({ sourceUrl: url, extracted, sourceText, translationLanguages }).then((result) => ({
           ...result.recipe,
           llmUsage: result.llmUsage
         }))
@@ -270,9 +270,9 @@ export async function importRecipeFromUrl({ url, mode, createToddlerVersion = fa
   };
 }
 
-export async function importRecipeFromPhotos({ photos, createToddlerVersion = false }) {
+export async function importRecipeFromPhotos({ photos, createToddlerVersion = false, translationLanguages = [] }) {
   const normalizedPhotos = photos.map(normalizePhotoUpload);
-  const result = await normalizeRecipeFromPhotosWithOpenAi({ photos: normalizedPhotos });
+  const result = await normalizeRecipeFromPhotosWithOpenAi({ photos: normalizedPhotos, translationLanguages });
   const recipe = await createRecipe({
     ...result.recipe,
     llmUsage: result.llmUsage

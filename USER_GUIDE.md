@@ -17,8 +17,9 @@ The recipe opens automatically after saving.
 2. Choose `Recipe URL`.
 3. Paste the recipe page URL.
 4. Choose `Verbatim import` or `ChatGPT processed import`.
-5. If using `ChatGPT processed import`, optionally enable `Create toddler helper version with AI step images`.
-6. Select `Import recipe`.
+5. If using `ChatGPT processed import`, choose which recipe translations to create: English, German, and/or Afrikaans.
+6. Optionally enable `Create toddler helper version with AI step images`.
+7. Select `Import recipe`.
 
 The app fetches the page on the backend, extracts recipe metadata where possible, and saves the result to the database.
 
@@ -27,8 +28,9 @@ The app fetches the page on the backend, extracts recipe metadata where possible
 1. Open `Import from URL`.
 2. Choose `Recipe photos`.
 3. Upload one to five PNG, JPEG, or WebP photos.
-4. Optionally enable `Create toddler helper version with AI step images`.
-5. Select `Import recipe`.
+4. Choose which recipe translations to create: English, German, and/or Afrikaans.
+5. Optionally enable `Create toddler helper version with AI step images`.
+6. Select `Import recipe`.
 
 Photo import requires AI processing to be enabled and an OpenAI API key to be configured. The backend sends the photos to the configured model, extracts visible recipe text, normalizes the recipe, converts units to metric, and rejects photos that do not contain an edible food cooking recipe.
 
@@ -50,7 +52,17 @@ When the toddler helper option is enabled, TL Recipe Core first imports the norm
 
 AI-processed imports request metric units for quantities and Celsius for temperatures. The backend validates the JSON response before saving. Manual recipes and verbatim imports keep the values you enter or the values extracted from the source page.
 
+When AI converts an ingredient to metric, the recipe detail keeps the original ingredient text, original quantity, and original unit when the model can extract them. This keeps the normalized cooking view metric-only without losing the source measurement.
+
 The default unit system is metric in Settings for v1.
+
+## Recipe Translations
+
+The language setting under `Settings` -> `General` changes the interface language. Recipe detail pages have their own `Recipe language` selector so the cooking view can be shown in the original recipe language, English, German, or Afrikaans without changing the UI language.
+
+AI-assisted imports can create translations during import. Existing recipes can create missing translations from the recipe detail page with `Generate missing translations`.
+
+Translated recipe views include the title, description, ingredient names and notes, method steps, and display tag labels. Original source ingredient text and source measurements are preserved below ingredients when available.
 
 ## Management Login
 
@@ -70,9 +82,12 @@ Use `Recipes` for the main library view:
 
 - Search by title, description, or ingredient text.
 - Use the tag dropdown to select one or more tag filters.
+- Use the category dropdown to filter by standard categories such as `Starters`, `Mains`, `Desserts`, `Vegan`, or `One-Pot`.
 - Clear selected tags from the dropdown chips to remove tag filters.
 
-Use `Tags / Search` when you want to combine search text with one or more tags.
+Use `Tags / Search` when you want to combine search text with tags and standard categories.
+
+Category filters are editable under `Settings` -> `General`. AI-assisted imports try to match new tags to existing tags and configured categories across supported languages before creating a new tag.
 
 ## Configure API Keys
 

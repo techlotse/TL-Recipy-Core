@@ -1,7 +1,7 @@
 # TL Recipe Core
 
 [![CI](https://github.com/Techlotse/TL-Recipy-Core/actions/workflows/ci.yml/badge.svg)](https://github.com/Techlotse/TL-Recipy-Core/actions/workflows/ci.yml)
-![Version](https://img.shields.io/badge/version-0.5.7-f59e0b)
+![Version](https://img.shields.io/badge/version-0.5.9-f59e0b)
 ![Docker build](https://img.shields.io/badge/docker-build%20in%20CI-a6e22e)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 
@@ -20,7 +20,9 @@ TL Recipe Core is a dark-mode-first internal recipe manager for saving, importin
 - AI imports are limited to edible food cooking recipes and ignore hidden instructions inside imported pages.
 - AI import usage metrics with model, tokens, response time, and cost snapshot.
 - Recipe editing.
-- Search and tag filtering.
+- Search, tag filtering, and editable category filters.
+- Language-aware interface plus per-recipe display language selection for English, German, and Afrikaans translations.
+- AI-assisted import and per-recipe translation generation for existing recipes.
 - Basic Auth protects Settings, imports, backups, and recipe/tag mutation routes while recipe browsing stays public.
 - Tabbed Settings page for general preferences, LLM configuration, key verification, usage stats, and personal backups.
 - PostgreSQL database with sample recipes.
@@ -83,7 +85,7 @@ docker compose up
 | --- | --- | --- |
 | `PORT` | `8080` | HTTP port inside the app container. |
 | `APP_PORT` | `8080` | Host port exposed by Docker Compose. Change this if `8080` is already in use. |
-| `DOCKER_IMAGE` | `techlotse/tl-recipe-core:v0.5.7` | Published image used by `docker-compose.yml`. |
+| `DOCKER_IMAGE` | `techlotse/tl-recipe-core:v0.5.9` | Published image used by `docker-compose.yml`. |
 | `DATABASE_URL` | Compose PostgreSQL URL | Backend database connection string. |
 | `DATABASE_STARTUP_RETRIES` | `30` | Startup attempts for migrations while PostgreSQL/Docker DNS becomes ready. |
 | `DATABASE_STARTUP_RETRY_MS` | `2000` | Delay between startup database retry attempts in milliseconds. |
@@ -107,6 +109,8 @@ For internal use, either:
 Keys entered in Settings are sent to the backend and stored encrypted in PostgreSQL using `APP_SECRET`. The frontend only receives whether a key is configured and never receives the stored key value.
 
 AI imports store a cost snapshot using the selected model's input and output token prices at import time. The app currently stores pricing for `gpt-5.5`, `gpt-5.4-mini`, and `gpt-5.4-nano`.
+
+AI-assisted imports can generate structured recipe translations for English, German, and Afrikaans. Existing recipes can also generate missing translations from the recipe detail page. Translation calls reuse the configured OpenAI key and add their token/cost usage to the recipe's AI usage snapshot.
 
 The import prompt treats source page content as untrusted data. Hidden text, metadata, comments, scripts, and instructions aimed at AI agents are ignored, and non-food or non-cooking pages are rejected instead of saved.
 
@@ -205,10 +209,12 @@ The GitHub Actions workflow runs those checks on pull requests, pushes to `main`
 
 - `GET /api/health`
 - `GET /api/version`
-- `GET /api/recipes?search=&tags=quick,vegan`
+- `GET /api/preferences`
+- `GET /api/recipes?search=&tags=quick,vegan&categories=Mains,Vegan`
 - `GET /api/recipes/:id`
 - `POST /api/recipes` protected by Basic Auth
 - `PUT /api/recipes/:id` protected by Basic Auth
+- `POST /api/recipes/:id/translations` protected by Basic Auth
 - `DELETE /api/recipes/:id` protected by Basic Auth
 - `GET /api/tags`
 - `POST /api/tags` protected by Basic Auth
@@ -226,6 +232,7 @@ The GitHub Actions workflow runs those checks on pull requests, pushes to `main`
 - Settings are stored server-side and can later be scoped per user.
 - The backend/frontend split keeps authentication, hosting, and API gateway changes isolated.
 - The import service has separate extraction and AI normalization functions for future provider changes.
+- Category filters are stored in Settings and can be adjusted without code changes.
 
 ## Troubleshooting
 

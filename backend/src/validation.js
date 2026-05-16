@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { LLM_PROVIDERS, OPENAI_MODEL_OPTIONS } from './llmOptions.js';
+import { SUPPORTED_LANGUAGES, normalizeLanguageCodes } from './categoryOptions.js';
 
 const optionalUrl = z
   .string()
@@ -27,6 +28,30 @@ export const stepSchema = z.object({
   imagePrompt: z.string().trim().optional().default('')
 });
 
+const translationIngredientSchema = z.object({
+  name: z.string().trim().optional().default(''),
+  quantity: z.string().trim().optional().default(''),
+  unit: z.string().trim().optional().default(''),
+  notes: z.string().trim().optional().default(''),
+  originalQuantity: z.string().trim().optional().default(''),
+  originalUnit: z.string().trim().optional().default(''),
+  originalText: z.string().trim().optional().default('')
+});
+
+const translationStepSchema = z.object({
+  text: z.string().trim().optional().default(''),
+  imageUrl: optionalUrl,
+  imagePrompt: z.string().trim().optional().default('')
+});
+
+const recipeTranslationSchema = z.object({
+  title: z.string().trim().optional().default(''),
+  shortDescription: z.string().trim().optional().default(''),
+  ingredients: z.array(translationIngredientSchema).optional().default([]),
+  steps: z.array(translationStepSchema).optional().default([]),
+  tags: z.array(z.string().trim().min(1)).optional().default([])
+});
+
 const tagInputSchema = z
   .union([
     z.string().trim().min(1),
@@ -45,6 +70,15 @@ export const recipeInputSchema = z.object({
   ingredients: z.array(ingredientSchema).min(1, 'Add at least one ingredient'),
   steps: z.array(stepSchema).min(1, 'Add at least one method step'),
   tags: z.array(tagInputSchema).max(30).optional().default([]),
+  translations: z
+    .record(z.string(), recipeTranslationSchema)
+    .transform((translations) =>
+      Object.fromEntries(
+        Object.entries(translations).filter(([language]) => SUPPORTED_LANGUAGES.includes(language))
+      )
+    )
+    .optional()
+    .default({}),
   sourceUrl: z.string().trim().url().optional().or(z.literal('')).default(''),
   importMode: z.enum(['manual', 'verbatim', 'ai']).optional().default('manual'),
   llmUsage: z
@@ -71,7 +105,9 @@ export const recipeInputSchema = z.object({
 export const importRequestSchema = z.object({
   url: z.string().trim().url('Enter a valid recipe URL'),
   mode: z.enum(['verbatim', 'ai']),
-  createToddlerVersion: z.boolean().optional().default(false)
+  createToddlerVersion: z.boolean().optional().default(false),
+  translationLanguages: z.array(z.enum(SUPPORTED_LANGUAGES)).optional().default([])
+    .transform((languages) => normalizeLanguageCodes(languages))
 });
 
 const photoDataUrlSchema = z
@@ -90,16 +126,24 @@ export const photoImportRequestSchema = z.object({
     )
     .min(1, 'Upload at least one recipe photo')
     .max(5, 'Upload up to 5 photos'),
-  createToddlerVersion: z.boolean().optional().default(false)
+  createToddlerVersion: z.boolean().optional().default(false),
+  translationLanguages: z.array(z.enum(SUPPORTED_LANGUAGES)).optional().default([])
+    .transform((languages) => normalizeLanguageCodes(languages))
+});
+
+export const recipeTranslationRequestSchema = z.object({
+  languages: z.array(z.enum(SUPPORTED_LANGUAGES)).min(1, 'Select at least one language')
+    .transform((languages) => normalizeLanguageCodes(languages))
 });
 
 export const settingsInputSchema = z.object({
   openaiApiKey: z.string().optional(),
-  defaultLanguage: z.string().trim().min(2).max(12).optional(),
+  defaultLanguage: z.enum(SUPPORTED_LANGUAGES).optional(),
   unitSystem: z.literal('metric').optional(),
   aiProcessingEnabled: z.boolean().optional(),
   llmProvider: z.enum(LLM_PROVIDERS).optional(),
-  openaiModel: z.enum(OPENAI_MODEL_OPTIONS.map((option) => option.id)).optional()
+  openaiModel: z.enum(OPENAI_MODEL_OPTIONS.map((option) => option.id)).optional(),
+  categoryFilters: z.array(z.string().trim().min(1).max(60)).max(30).optional()
 });
 
 export const verifyOpenAiInputSchema = z.object({

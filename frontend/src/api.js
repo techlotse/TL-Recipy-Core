@@ -87,10 +87,11 @@ function clearAuthorizationHeader() {
 }
 
 export const api = {
-  async listRecipes({ search = '', tags = [] } = {}) {
+  async listRecipes({ search = '', tags = [], categories = [] } = {}) {
     const params = new URLSearchParams();
     if (search) params.set('search', search);
     if (tags.length) params.set('tags', tags.join(','));
+    if (categories.length) params.set('categories', categories.join(','));
     const query = params.toString();
     return request(`/api/recipes${query ? `?${query}` : ''}`);
   },
@@ -102,6 +103,13 @@ export const api = {
   },
   async updateRecipe(id, recipe) {
     return request(`/api/recipes/${id}`, { method: 'PUT', body: recipe, requiresAuth: true });
+  },
+  async translateRecipe(id, languages) {
+    return request(`/api/recipes/${id}/translations`, {
+      method: 'POST',
+      body: { languages },
+      requiresAuth: true
+    });
   },
   async deleteRecipe(id) {
     return request(`/api/recipes/${id}`, { method: 'DELETE', requiresAuth: true });
@@ -120,6 +128,9 @@ export const api = {
   },
   async getSettings() {
     return request('/api/settings', { requiresAuth: true });
+  },
+  async getPreferences() {
+    return request('/api/preferences');
   },
   async updateSettings(settings) {
     return request('/api/settings', { method: 'PUT', body: settings, requiresAuth: true });

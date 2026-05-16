@@ -8,6 +8,12 @@ import {
   OPENAI_MODEL_OPTIONS,
   isSupportedOpenAiModel
 } from '../llmOptions.js';
+import {
+  DEFAULT_CATEGORY_FILTERS,
+  LANGUAGE_LABELS,
+  SUPPORTED_LANGUAGES,
+  normalizeCategoryFilters
+} from '../categoryOptions.js';
 
 const DEFAULTS = {
   default_language: 'en',
@@ -17,7 +23,8 @@ const DEFAULTS = {
   openai_model: isSupportedOpenAiModel(config.openai.model) ? config.openai.model : DEFAULT_OPENAI_MODEL,
   openai_key_status: 'unverified',
   openai_key_checked_at: '',
-  openai_key_error: ''
+  openai_key_error: '',
+  category_filters: JSON.stringify(DEFAULT_CATEGORY_FILTERS)
 };
 
 async function getSettingMap() {
@@ -97,8 +104,12 @@ export async function getPublicSettings() {
   const model = settings.get('openai_model')?.value || config.openai.model;
   const provider = settings.get('llm_provider')?.value || DEFAULTS.llm_provider;
 
+  const defaultLanguage = settings.get('default_language')?.value || DEFAULTS.default_language;
+  const categoryFilters = safeCategoryFilters(settings.get('category_filters')?.value);
+
   return {
-    defaultLanguage: settings.get('default_language')?.value || DEFAULTS.default_language,
+    defaultLanguage: SUPPORTED_LANGUAGES.includes(defaultLanguage) ? defaultLanguage : DEFAULTS.default_language,
+    supportedLanguages: SUPPORTED_LANGUAGES.map((code) => ({ code, label: LANGUAGE_LABELS[code] || code })),
     unitSystem: 'metric',
     aiProcessingEnabled:
       (settings.get('ai_processing_enabled')?.value || DEFAULTS.ai_processing_enabled) === 'true',
@@ -110,13 +121,37 @@ export async function getPublicSettings() {
     openaiKeyStatus: settings.get('openai_key_status')?.value || DEFAULTS.openai_key_status,
     openaiKeyCheckedAt: settings.get('openai_key_checked_at')?.value || '',
     openaiKeyError: settings.get('openai_key_error')?.value || '',
+    categoryFilters,
     usageSummary: await getUsageSummary()
+  };
+}
+
+function safeCategoryFilters(value) {
+  try {
+    const parsed = value ? JSON.parse(value) : DEFAULT_CATEGORY_FILTERS;
+    return normalizeCategoryFilters(Array.isArray(parsed) ? parsed : DEFAULT_CATEGORY_FILTERS);
+  } catch {
+    return normalizeCategoryFilters(DEFAULT_CATEGORY_FILTERS);
+  }
+}
+
+export async function getPublicPreferences() {
+  const settings = await getPublicSettings();
+  return {
+    defaultLanguage: settings.defaultLanguage,
+    supportedLanguages: settings.supportedLanguages,
+    unitSystem: settings.unitSystem,
+    categoryFilters: settings.categoryFilters
   };
 }
 
 export async function updateSettings(input) {
   if (input.defaultLanguage !== undefined) {
     await upsertSetting('default_language', input.defaultLanguage, false);
+  }
+
+  if (input.categoryFilters !== undefined) {
+    await upsertSetting('category_filters', JSON.stringify(normalizeCategoryFilters(input.categoryFilters)), false);
   }
 
   if (input.unitSystem !== undefined) {

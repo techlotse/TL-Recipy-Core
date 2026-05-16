@@ -44,6 +44,7 @@ test('protects management routes and keeps read-only views public', () => {
   assert.equal(isProtectedApiRequest({ method: 'GET', path: '/api/tags' }), false);
   assert.equal(isProtectedApiRequest({ method: 'POST', path: '/api/recipes' }), true);
   assert.equal(isProtectedApiRequest({ method: 'PUT', path: '/api/recipes/abc' }), true);
+  assert.equal(isProtectedApiRequest({ method: 'POST', path: '/api/recipes/abc/translations' }), true);
   assert.equal(isProtectedApiRequest({ method: 'DELETE', path: '/api/recipes/abc' }), true);
   assert.equal(isProtectedApiRequest({ method: 'POST', path: '/api/imports/url' }), true);
   assert.equal(isProtectedApiRequest({ method: 'GET', path: '/api/settings' }), true);

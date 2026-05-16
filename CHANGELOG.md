@@ -1,7 +1,17 @@
 # Changelog
 
-## v0.5.7
+## v0.5.9
 
+- Added import-time recipe translation selection for English, German, and Afrikaans.
+- Added per-recipe language selection on recipe detail pages, separate from the UI language.
+- Added per-recipe AI translation generation for existing recipes with token/cost usage added to recipe metrics.
+- Expanded translated recipe views to include ingredients, ingredient notes, method steps, and display tag labels while preserving original source measurements.
+
+## v0.5.8
+
+- Added language-aware recipe display for translated AI-imported recipes while preserving original ingredient lines and source measurements.
+- Added canonical category filters and tag matching to reduce multilingual tag duplication.
+- Added editable recipe category filters in Settings and category filters on recipe search views.
 - Improved mobile fit behavior and moved AI import usage stats to the end of recipe details for cleaner cooking views.
 - Added Basic Auth protection and a management login prompt for Settings, imports, backups, and recipe/tag management while keeping recipe browsing public.
 - Applied the TL Platform Design System direction with the TL Recipe Core amber accent, softer dark SaaS surfaces, sidebar account treatment, and richer empty states.
