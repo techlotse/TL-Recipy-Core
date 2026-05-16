@@ -14,7 +14,7 @@
     "dev:frontend": "npm run dev --workspace frontend",
     "lint": "node scripts/lint.mjs",
     "start": "npm run start --workspace backend",
-    "test": "node --test backend/tests/duration.test.js backend/tests/normalization.test.js"
+    "test": "node --test backend/tests/auth.test.js backend/tests/duration.test.js backend/tests/normalization.test.js"
   },
   "engines": {
     "node": ">=24.0.0"

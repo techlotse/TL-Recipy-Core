@@ -185,6 +185,11 @@ a {
   color: var(--accent);
 }
 
+.account-signout {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
 .main-content {
   min-width: 0;
   padding: 2rem;
@@ -487,6 +492,11 @@ h3 {
   border-color: rgba(239, 68, 68, 0.32);
   background: rgba(239, 68, 68, 0.1);
   color: #fecaca;
+}
+
+.state.compact {
+  min-height: 0;
+  margin: 0;
 }
 
 .empty-state {
@@ -1159,6 +1169,59 @@ h3 {
 .saved {
   color: var(--accent-2);
   font-weight: 800;
+}
+
+.auth-overlay {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(2, 6, 23, 0.72);
+  padding: 1rem;
+  backdrop-filter: blur(10px);
+}
+
+.auth-dialog {
+  position: relative;
+  display: grid;
+  gap: 0.85rem;
+  width: min(100%, 28rem);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--tl-radius-lg);
+  background:
+    radial-gradient(circle at top left, rgba(245, 158, 11, 0.12), transparent 18rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015)),
+    var(--tl-bg-secondary);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+  padding: 1.35rem;
+}
+
+.auth-close {
+  position: absolute;
+  top: 0.8rem;
+  right: 0.8rem;
+}
+
+.auth-dialog-icon {
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: var(--tl-radius-md);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.auth-dialog h2 {
+  margin-bottom: 0;
+}
+
+.auth-dialog p:not(.eyebrow) {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 @media (max-width: 920px) {

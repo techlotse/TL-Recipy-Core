@@ -21,6 +21,7 @@ TL Recipe Core is a dark-mode-first internal recipe manager for saving, importin
 - AI import usage metrics with model, tokens, response time, and cost snapshot.
 - Recipe editing.
 - Search and tag filtering.
+- Basic Auth protects Settings, imports, backups, and recipe/tag mutation routes while recipe browsing stays public.
 - Tabbed Settings page for general preferences, LLM configuration, key verification, usage stats, and personal backups.
 - PostgreSQL database with sample recipes.
 - Docker Compose setup for internal deployment.
@@ -40,7 +41,7 @@ TL Recipe Core is a dark-mode-first internal recipe manager for saving, importin
    cp .env.example .env
    ```
 
-2. Edit `.env` and set `APP_SECRET` to a long random value. Optionally set `OPENAI_API_KEY`.
+2. Edit `.env`, set `APP_SECRET` to a long random value, and change `BASIC_AUTH_EMAIL` / `BASIC_AUTH_PASSWORD`. Optionally set `OPENAI_API_KEY`.
 
 3. Start the published image:
 
@@ -88,6 +89,9 @@ docker compose up
 | `DATABASE_STARTUP_RETRY_MS` | `2000` | Delay between startup database retry attempts in milliseconds. |
 | `APP_SECRET` | development fallback | Encrypts stored API keys. Set this before real use. |
 | `SEED_SAMPLE_DATA` | `true` | Inserts sample recipes when the database is empty. |
+| `BASIC_AUTH_EMAIL` | `admin@example.com` | Email/username for protected management actions. Change this before real use. |
+| `BASIC_AUTH_PASSWORD` | `change-me` | Password for protected management actions. Change this before real use. |
+| `BASIC_AUTH_REALM` | `TL Recipe Core` | HTTP Basic Auth realm sent by the backend. |
 | `OPENAI_API_KEY` | empty | Optional server-side OpenAI key. Overrides DB-stored key. |
 | `OPENAI_MODEL` | `gpt-5.4-nano` | Fallback model used for AI recipe normalization. |
 | `OPENAI_IMAGE_MODEL` | `gpt-image-1` | Image model used for toddler helper step illustrations. |
@@ -107,6 +111,18 @@ AI imports store a cost snapshot using the selected model's input and output tok
 The import prompt treats source page content as untrusted data. Hidden text, metadata, comments, scripts, and instructions aimed at AI agents are ignored, and non-food or non-cooking pages are rejected instead of saved.
 
 Photo imports use the same AI-assisted recipe rules. Uploaded PNG, JPEG, or WebP photos are sent to the backend, passed to the configured OpenAI model for OCR and normalization, and rejected if they do not contain an edible food cooking recipe.
+
+## Basic Auth
+
+Recipe list, recipe detail, tag search, health, and version endpoints are public inside the internal deployment. Management actions require HTTP Basic Auth:
+
+- Settings and OpenAI key management.
+- URL/photo imports.
+- Manual recipe creation, editing, and deletion.
+- Tag creation.
+- Personal backup export and import.
+
+Set `BASIC_AUTH_EMAIL` and `BASIC_AUTH_PASSWORD` in `.env`, then restart the app. The frontend asks for these credentials when a protected action is started, stores the Basic Auth header in session storage for the current browser tab, and sends it only to protected API calls.
 
 ## Update and Rebuild
 
@@ -190,19 +206,19 @@ The GitHub Actions workflow runs those checks on pull requests, pushes to `main`
 - `GET /api/health`
 - `GET /api/version`
 - `GET /api/recipes?search=&tags=quick,vegan`
-- `POST /api/recipes`
 - `GET /api/recipes/:id`
-- `PUT /api/recipes/:id`
-- `DELETE /api/recipes/:id`
+- `POST /api/recipes` protected by Basic Auth
+- `PUT /api/recipes/:id` protected by Basic Auth
+- `DELETE /api/recipes/:id` protected by Basic Auth
 - `GET /api/tags`
-- `POST /api/tags`
-- `POST /api/imports/url`
-- `POST /api/imports/photos`
-- `GET /api/settings`
-- `PUT /api/settings`
-- `POST /api/settings/verify-openai`
-- `GET /api/backups/export`
-- `POST /api/backups/import`
+- `POST /api/tags` protected by Basic Auth
+- `POST /api/imports/url` protected by Basic Auth
+- `POST /api/imports/photos` protected by Basic Auth
+- `GET /api/settings` protected by Basic Auth
+- `PUT /api/settings` protected by Basic Auth
+- `POST /api/settings/verify-openai` protected by Basic Auth
+- `GET /api/backups/export` protected by Basic Auth
+- `POST /api/backups/import` protected by Basic Auth
 
 ## Future Extension Points
 
@@ -222,6 +238,10 @@ Run `docker compose ps` and confirm `db` is healthy. Check `DATABASE_URL` if run
 Confirm AI processing is enabled in Settings and that an OpenAI API key is configured. Check `docker compose logs -f app` for upstream API errors.
 
 AI-processed imports also reject pages that are not edible food cooking recipes.
+
+**The app asks for a management username and password**
+
+Use the `BASIC_AUTH_EMAIL` and `BASIC_AUTH_PASSWORD` values from `.env`. Browsing recipes does not require auth, but Settings, imports, backups, and recipe edits do.
 
 **Imported recipes are incomplete**
 

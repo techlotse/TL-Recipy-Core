@@ -52,6 +52,18 @@ AI-processed imports request metric units for quantities and Celsius for tempera
 
 The default unit system is metric in Settings for v1.
 
+## Management Login
+
+Browsing recipes, opening recipe details, searching, and filtering tags are public inside the internal deployment.
+
+The app asks for Basic Auth credentials when you manage data:
+
+- Add, edit, or delete recipes.
+- Import recipes from URLs or photos.
+- Open Settings, configure API keys, or use backups.
+
+Use the email and password configured in `BASIC_AUTH_EMAIL` and `BASIC_AUTH_PASSWORD`. The login stays active for the current browser tab and can be cleared from the sidebar.
+
 ## Tag and Search Recipes
 
 Use `Recipes` for the main library view:

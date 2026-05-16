@@ -12,6 +12,9 @@ services:
       DATABASE_STARTUP_RETRIES: ${DATABASE_STARTUP_RETRIES:-30}
       DATABASE_STARTUP_RETRY_MS: ${DATABASE_STARTUP_RETRY_MS:-2000}
       APP_SECRET: ${APP_SECRET:-change-me-use-a-long-random-secret}
+      BASIC_AUTH_EMAIL: ${BASIC_AUTH_EMAIL:-admin@example.com}
+      BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD:-change-me}
+      BASIC_AUTH_REALM: ${BASIC_AUTH_REALM:-TL Recipe Core}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.4-nano}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}

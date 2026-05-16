@@ -8,6 +8,11 @@ const rootDir = path.resolve(currentDir, '..', '..');
 export const config = {
   appName: 'TL Recipe Core',
   appSecret: process.env.APP_SECRET || 'dev-only-change-me',
+  basicAuth: {
+    email: process.env.BASIC_AUTH_EMAIL || 'admin@example.com',
+    password: process.env.BASIC_AUTH_PASSWORD || 'change-me',
+    realm: process.env.BASIC_AUTH_REALM || 'TL Recipe Core'
+  },
   databaseUrl:
     process.env.DATABASE_URL ||
     'postgres://tl_recipe:tl_recipe@localhost:5432/tl_recipe_core',

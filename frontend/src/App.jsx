@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -26,7 +26,7 @@ import {
   Utensils,
   X
 } from 'lucide-react';
-import { api } from './api.js';
+import { api, configureAuth } from './api.js';
 
 const emptyIngredient = { name: '', quantity: '', unit: '', notes: '' };
 const emptyStep = { text: '' };
@@ -34,6 +34,33 @@ const isAdminUser = true;
 const MAX_IMPORT_PHOTOS = 5;
 const MAX_IMPORT_PHOTO_BYTES = 4 * 1024 * 1024;
 const IMPORT_PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const AUTH_SESSION_KEY = 'tl_recipe_core_management_auth';
+
+function getStoredAuthHeader() {
+  try {
+    return window.sessionStorage.getItem(AUTH_SESSION_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+function storeAuthHeader(header) {
+  try {
+    if (header) window.sessionStorage.setItem(AUTH_SESSION_KEY, header);
+    else window.sessionStorage.removeItem(AUTH_SESSION_KEY);
+  } catch {
+    // Session storage can be unavailable in restricted browser contexts.
+  }
+}
+
+function encodeBasicAuth(email, password) {
+  const bytes = new TextEncoder().encode(`${email}:${password}`);
+  let binary = '';
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return `Basic ${window.btoa(binary)}`;
+}
 
 function getRoute() {
   const hash = window.location.hash.replace(/^#/, '');
@@ -288,7 +315,7 @@ function RecipeCard({ recipe }) {
   );
 }
 
-function AppNav({ route }) {
+function AppNav({ route, managementUnlocked, onManagementSignOut }) {
   const items = [
     { path: '/recipes', label: 'Recipes', icon: Utensils },
     { path: '/add', label: 'Add Recipe', icon: Plus },
@@ -324,9 +351,14 @@ function AppNav({ route }) {
           <ShieldCheck size={17} />
         </div>
         <div>
-          <strong>Local admin</strong>
-          <small>Internal workspace</small>
+          <strong>{managementUnlocked ? 'Management unlocked' : 'Public browsing'}</strong>
+          <small>{managementUnlocked ? 'Basic Auth active' : 'Sign in when needed'}</small>
         </div>
+        {managementUnlocked && (
+          <button className="icon-button account-signout" type="button" title="Sign out" onClick={onManagementSignOut}>
+            <X size={16} />
+          </button>
+        )}
       </div>
     </aside>
   );
@@ -537,6 +569,72 @@ function Field({ label, children }) {
       <span>{label}</span>
       {children}
     </label>
+  );
+}
+
+function ManagementLoginDialog({ challenge, onSubmit, onCancel }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  useEffect(() => {
+    if (challenge) setPassword('');
+  }, [challenge]);
+
+  if (!challenge) return null;
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    onSubmit(email.trim(), password);
+  }
+
+  return (
+    <div className="auth-overlay">
+      <form
+        className="auth-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="management-login-title"
+        onSubmit={handleSubmit}
+      >
+        <button className="icon-button auth-close" type="button" title="Cancel" onClick={onCancel}>
+          <X size={17} />
+        </button>
+        <div className="auth-dialog-icon">
+          <KeyRound size={24} />
+        </div>
+        <p className="eyebrow">Management access</p>
+        <h2 id="management-login-title">Sign in to continue</h2>
+        <p>Settings, imports, backups, and recipe changes require the configured management credentials.</p>
+        {challenge.invalid && <div className="state error compact">Credentials were rejected. Try again.</div>}
+        <Field label="Email">
+          <input
+            type="email"
+            autoComplete="username"
+            autoFocus
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="admin@example.com"
+          />
+        </Field>
+        <Field label="Password">
+          <input
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+        </Field>
+        <div className="form-actions">
+          <button className="secondary-button" type="button" onClick={onCancel}>
+            Cancel
+          </button>
+          <button className="primary-button" type="submit" disabled={!email.trim() || !password}>
+            <KeyRound size={18} />
+            Sign in
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }
 
@@ -1568,8 +1666,50 @@ function SaasManagementPage() {
 
 export default function App() {
   const route = useRoute();
+  const initialAuthHeader = useRef(getStoredAuthHeader());
+  const authHeaderRef = useRef(initialAuthHeader.current);
+  const authWaitersRef = useRef([]);
+  const [authHeader, setAuthHeader] = useState(initialAuthHeader.current);
+  const [authChallenge, setAuthChallenge] = useState(null);
   const editMatch = route.match(/^\/recipes\/(.+)\/edit$/);
   const recipeMatch = editMatch ? null : route.match(/^\/recipes\/(.+)$/);
+
+  useLayoutEffect(() => {
+    configureAuth({
+      getAuthorizationHeader: async ({ force = false } = {}) => {
+        if (!force && authHeaderRef.current) return authHeaderRef.current;
+        return new Promise((resolve) => {
+          authWaitersRef.current.push(resolve);
+          setAuthChallenge({ invalid: force, requestedAt: Date.now() });
+        });
+      },
+      onUnauthorized: () => {
+        authHeaderRef.current = '';
+        setAuthHeader('');
+        storeAuthHeader('');
+      }
+    });
+  }, []);
+
+  function completeManagementLogin(email, password) {
+    const header = encodeBasicAuth(email, password);
+    authHeaderRef.current = header;
+    setAuthHeader(header);
+    storeAuthHeader(header);
+    setAuthChallenge(null);
+    authWaitersRef.current.splice(0).forEach((resolve) => resolve(header));
+  }
+
+  function cancelManagementLogin() {
+    setAuthChallenge(null);
+    authWaitersRef.current.splice(0).forEach((resolve) => resolve(null));
+  }
+
+  function signOutManagement() {
+    authHeaderRef.current = '';
+    setAuthHeader('');
+    storeAuthHeader('');
+  }
 
   let page;
   if (editMatch) page = <AddRecipePage recipeId={editMatch[1]} />;
@@ -1583,8 +1723,17 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <AppNav route={route} />
+      <AppNav
+        route={route}
+        managementUnlocked={Boolean(authHeader)}
+        onManagementSignOut={signOutManagement}
+      />
       <main className="main-content">{page}</main>
+      <ManagementLoginDialog
+        challenge={authChallenge}
+        onSubmit={completeManagementLogin}
+        onCancel={cancelManagementLogin}
+      />
     </div>
   );
 }

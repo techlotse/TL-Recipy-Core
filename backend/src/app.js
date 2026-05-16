@@ -9,6 +9,7 @@ import { tagsRouter } from './routes/tags.js';
 import { importsRouter } from './routes/imports.js';
 import { settingsRouter } from './routes/settings.js';
 import { backupsRouter } from './routes/backups.js';
+import { requireBasicAuth } from './middleware/basicAuth.js';
 
 const appVersion = JSON.parse(
   readFileSync(path.join(config.rootDir, 'shared', 'app-version.json'), 'utf8')
@@ -17,6 +18,8 @@ const appVersion = JSON.parse(
 export function createApp() {
   const app = express();
   const defaultJsonParser = express.json({ limit: '3mb' });
+
+  app.use(requireBasicAuth);
 
   app.use((req, res, next) => {
     if (req.path === '/api/imports/photos') {

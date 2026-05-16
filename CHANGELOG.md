@@ -2,6 +2,7 @@
 
 ## v0.5.5
 
+- Added Basic Auth protection and a management login prompt for Settings, imports, backups, and recipe/tag management while keeping recipe browsing public.
 - Applied the TL Platform Design System direction with the TL Recipe Core amber accent, softer dark SaaS surfaces, sidebar account treatment, and richer empty states.
 - Replaced interactive tag chips with multi-select dropdown controls for tag assignment and filtering.
 - Added startup retry handling for temporary PostgreSQL DNS/readiness failures.
