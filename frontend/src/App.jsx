@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Bot,
+  ChevronDown,
   Check,
   Clock3,
   DatabaseBackup,
@@ -22,7 +23,8 @@ import {
   Tags,
   Trash2,
   UploadCloud,
-  Utensils
+  Utensils,
+  X
 } from 'lucide-react';
 import { api } from './api.js';
 
@@ -83,21 +85,97 @@ function tagNames(recipe) {
   return (recipe.tags || []).map((tag) => (typeof tag === 'string' ? tag : tag.name));
 }
 
-function TagPill({ tag, selected = false, onClick }) {
-  const label = typeof tag === 'string' ? tag : tag.name;
+function MultiSelectDropdown({
+  label,
+  options,
+  selectedValues,
+  onChange,
+  placeholder = 'Select tags',
+  emptyText = 'No tags yet'
+}) {
+  const optionLabels = new Map(options.map((option) => [option.value, option.label]));
+  const selectedLabels = selectedValues.map((value) => ({
+    value,
+    label: optionLabels.get(value) || value
+  }));
+
+  function toggleValue(value) {
+    onChange(
+      selectedValues.includes(value)
+        ? selectedValues.filter((item) => item !== value)
+        : [...selectedValues, value]
+    );
+  }
+
   return (
-    <button
-      className={`tag-pill ${selected ? 'selected' : ''}`}
-      type="button"
-      onClick={onClick}
-      title={`Filter by ${label}`}
-    >
-      {label}
-    </button>
+    <div className="multi-select-field">
+      {label && <span className="multi-select-label">{label}</span>}
+      <details className="multi-select-dropdown">
+        <summary>
+          <span>{selectedValues.length ? `${selectedValues.length} selected` : placeholder}</span>
+          <ChevronDown size={17} />
+        </summary>
+        <div className="multi-select-menu">
+          {options.length ? (
+            options.map((option) => (
+              <label className="multi-select-option" key={option.value}>
+                <input
+                  type="checkbox"
+                  checked={selectedValues.includes(option.value)}
+                  onChange={() => toggleValue(option.value)}
+                />
+                <span>{option.label}</span>
+                {option.count !== undefined && <small>{option.count}</small>}
+              </label>
+            ))
+          ) : (
+            <div className="multi-select-empty">{emptyText}</div>
+          )}
+        </div>
+      </details>
+
+      {selectedLabels.length > 0 && (
+        <div className="selected-tag-list">
+          {selectedLabels.map((item) => (
+            <button className="tag-remove-chip" type="button" key={item.value} onClick={() => toggleValue(item.value)}>
+              <span>{item.label}</span>
+              <X size={14} />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
-function StatusMessage({ loading, error, empty, emptyText }) {
+function EmptyState({ text, checklist = [], actionLabel, onAction }) {
+  return (
+    <div className="empty-state">
+      <div className="empty-state-visual">
+        <Utensils size={34} />
+      </div>
+      <div>
+        <h2>{text}</h2>
+        <p>Build a clean recipe library by adding, importing, and tagging the recipes you use most.</p>
+      </div>
+      {checklist.length > 0 && (
+        <ol>
+          {checklist.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ol>
+      )}
+      {actionLabel && (
+        <button className="primary-button" type="button" onClick={onAction}>
+          <Plus size={18} />
+          {actionLabel}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function StatusMessage({ loading, error, empty, emptyText, emptyChecklist, emptyActionLabel, onEmptyAction }) {
   if (loading) {
     return (
       <div className="state">
@@ -107,7 +185,16 @@ function StatusMessage({ loading, error, empty, emptyText }) {
     );
   }
   if (error) return <div className="state error">{error}</div>;
-  if (empty) return <div className="state">{emptyText}</div>;
+  if (empty) {
+    return (
+      <EmptyState
+        text={emptyText}
+        checklist={emptyChecklist}
+        actionLabel={emptyActionLabel}
+        onAction={onEmptyAction}
+      />
+    );
+  }
   return null;
 }
 
@@ -232,6 +319,15 @@ function AppNav({ route }) {
           );
         })}
       </nav>
+      <div className="sidebar-account">
+        <div className="account-avatar">
+          <ShieldCheck size={17} />
+        </div>
+        <div>
+          <strong>Local admin</strong>
+          <small>Internal workspace</small>
+        </div>
+      </div>
     </aside>
   );
 }
@@ -240,7 +336,7 @@ function RecipesPage() {
   const [recipes, setRecipes] = useState([]);
   const [tags, setTags] = useState([]);
   const [search, setSearch] = useState('');
-  const [selectedTag, setSelectedTag] = useState('');
+  const [selectedTags, setSelectedTags] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -250,7 +346,7 @@ function RecipesPage() {
     setError('');
 
     Promise.all([
-      api.listRecipes({ search, tags: selectedTag ? [selectedTag] : [] }),
+      api.listRecipes({ search, tags: selectedTags }),
       api.listTags()
     ])
       .then(([recipesPayload, tagsPayload]) => {
@@ -264,7 +360,7 @@ function RecipesPage() {
     return () => {
       active = false;
     };
-  }, [search, selectedTag]);
+  }, [search, selectedTags]);
 
   return (
     <section className="view">
@@ -279,7 +375,7 @@ function RecipesPage() {
         </button>
       </div>
 
-      <div className="toolbar">
+      <div className="toolbar search-filter-toolbar">
         <label className="search-box">
           <Search size={18} />
           <input
@@ -288,25 +384,24 @@ function RecipesPage() {
             placeholder="Search recipes, ingredients, descriptions"
           />
         </label>
-      </div>
-
-      <div className="tag-row filter-row">
-        <TagPill tag="All" selected={!selectedTag} onClick={() => setSelectedTag('')} />
-        {tags.map((tag) => (
-          <TagPill
-            key={tag.id}
-            tag={tag}
-            selected={selectedTag === tag.slug}
-            onClick={() => setSelectedTag(selectedTag === tag.slug ? '' : tag.slug)}
-          />
-        ))}
+        <MultiSelectDropdown
+          label="Tags"
+          options={tags.map((tag) => ({ value: tag.slug, label: tag.name, count: tag.recipeCount }))}
+          selectedValues={selectedTags}
+          onChange={setSelectedTags}
+          placeholder="All tags"
+          emptyText="No tags available"
+        />
       </div>
 
       <StatusMessage
         loading={loading}
         error={error}
         empty={!recipes.length}
-        emptyText="No recipes found. Add one manually or import from a URL."
+        emptyText="No recipes found"
+        emptyChecklist={['Add a recipe manually', 'Import from a URL or photos', 'Tag recipes for faster filtering']}
+        emptyActionLabel="Add recipe"
+        onEmptyAction={() => navigate('/add')}
       />
 
       <div className="recipe-grid">
@@ -533,13 +628,6 @@ function AddRecipePage({ recipeId = null }) {
     }));
   }
 
-  function toggleTag(tag) {
-    setRecipe((current) => {
-      const exists = current.tags.includes(tag);
-      return { ...current, tags: exists ? current.tags.filter((item) => item !== tag) : [...current.tags, tag] };
-    });
-  }
-
   function addNewTag() {
     const cleaned = newTag.trim();
     if (!cleaned) return;
@@ -734,27 +822,20 @@ function AddRecipePage({ recipeId = null }) {
 
         {stepIndex === 3 && (
           <div className="stack">
-            <div className="tag-row">
-              {existingTags.map((tag) => (
-                <TagPill
-                  key={tag.id}
-                  tag={tag}
-                  selected={recipe.tags.includes(tag.name)}
-                  onClick={() => toggleTag(tag.name)}
-                />
-              ))}
-            </div>
+            <MultiSelectDropdown
+              label="Existing tags"
+              options={existingTags.map((tag) => ({ value: tag.name, label: tag.name, count: tag.recipeCount }))}
+              selectedValues={recipe.tags}
+              onChange={(values) => updateRecipe('tags', values)}
+              placeholder="Select tags"
+              emptyText="No tags available"
+            />
             <div className="inline-form">
               <input value={newTag} onChange={(event) => setNewTag(event.target.value)} placeholder="New tag" />
               <button className="secondary-button" type="button" onClick={addNewTag}>
                 <Plus size={18} />
                 Create
               </button>
-            </div>
-            <div className="tag-row">
-              {recipe.tags.map((tag) => (
-                <TagPill key={tag} tag={tag} selected onClick={() => toggleTag(tag)} />
-              ))}
             </div>
           </div>
         )}
@@ -1062,12 +1143,6 @@ function TagsSearchPage() {
     };
   }, [search, selectedTags]);
 
-  function toggleSlug(slug) {
-    setSelectedTags((current) =>
-      current.includes(slug) ? current.filter((item) => item !== slug) : [...current, slug]
-    );
-  }
-
   return (
     <section className="view">
       <div className="view-header">
@@ -1077,28 +1152,28 @@ function TagsSearchPage() {
         </div>
       </div>
 
-      <div className="toolbar">
+      <div className="toolbar search-filter-toolbar">
         <label className="search-box">
           <Search size={18} />
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search library" />
         </label>
+        <MultiSelectDropdown
+          label="Tags"
+          options={tags.map((tag) => ({ value: tag.slug, label: tag.name, count: tag.recipeCount }))}
+          selectedValues={selectedTags}
+          onChange={setSelectedTags}
+          placeholder="All tags"
+          emptyText="No tags available"
+        />
       </div>
 
-      <div className="tag-row filter-row">
-        {tags.map((tag) => (
-          <button
-            className={`tag-pill ${selectedTags.includes(tag.slug) ? 'selected' : ''}`}
-            type="button"
-            key={tag.id}
-            onClick={() => toggleSlug(tag.slug)}
-          >
-            {tag.name}
-            <span>{tag.recipeCount}</span>
-          </button>
-        ))}
-      </div>
-
-      <StatusMessage loading={loading} error={error} empty={!recipes.length} emptyText="No matching recipes." />
+      <StatusMessage
+        loading={loading}
+        error={error}
+        empty={!recipes.length}
+        emptyText="No matching recipes"
+        emptyChecklist={['Adjust the search text', 'Remove one or more tag filters', 'Add tags to imported recipes']}
+      />
       <div className="recipe-grid">
         {recipes.map((recipe) => (
           <RecipeCard recipe={recipe} key={recipe.id} />

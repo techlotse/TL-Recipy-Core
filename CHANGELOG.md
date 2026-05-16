@@ -1,19 +1,15 @@
 # Changelog
 
-## Unreleased
+## v0.5.5
 
+- Applied the TL Platform Design System direction with the TL Recipe Core amber accent, softer dark SaaS surfaces, sidebar account treatment, and richer empty states.
+- Replaced interactive tag chips with multi-select dropdown controls for tag assignment and filtering.
 - Added startup retry handling for temporary PostgreSQL DNS/readiness failures.
 - Added AI-assisted photo import for up to five uploaded recipe photos.
 - Hardened OpenAI import instructions to accept only edible food cooking recipes and ignore hidden AI-agent instructions in imported page content.
-
-## v0.5.1
-
 - Fixed API validation errors rendering as `[object Object]` in the frontend.
 - Invalid import URLs now show the actual validation field message.
 - Started maintaining this changelog.
-
-## v0.5.0
-
 - Added optional toddler-helper recipe creation for AI-assisted imports.
 - Added generated toddler-safe image support for each toddler helper step.
 - Added image model, image count, and image cost tracking for AI-created step images.

@@ -57,8 +57,8 @@ The default unit system is metric in Settings for v1.
 Use `Recipes` for the main library view:
 
 - Search by title, description, or ingredient text.
-- Select a tag chip to filter recipe cards.
-- Select `All` to clear the tag filter.
+- Use the tag dropdown to select one or more tag filters.
+- Clear selected tags from the dropdown chips to remove tag filters.
 
 Use `Tags / Search` when you want to combine search text with one or more tags.
 
