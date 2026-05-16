@@ -244,7 +244,8 @@ function LlmUsageCard({ usage }) {
 
   return (
     <section className="content-block usage-card">
-      <h2>LLM usage</h2>
+      <p className="eyebrow">Import stats</p>
+      <h2>AI import usage</h2>
       <div className="metric-grid">
         <div>
           <span>Model</span>
@@ -521,8 +522,6 @@ function RecipeDetailPage({ id }) {
         </div>
       </div>
 
-      <LlmUsageCard usage={recipe.llmUsage} />
-
       <div className="detail-grid">
         <section className="content-block">
           <h2>Ingredients</h2>
@@ -559,6 +558,8 @@ function RecipeDetailPage({ id }) {
           </ol>
         </section>
       </div>
+
+      <LlmUsageCard usage={recipe.llmUsage} />
     </section>
   );
 }

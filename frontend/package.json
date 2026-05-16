@@ -1,6 +1,6 @@
 {
   "name": "@tl-recipe-core/frontend",
-  "version": "0.5.5",
+  "version": "0.5.7",
   "private": true,
   "type": "module",
   "scripts": {

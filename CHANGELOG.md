@@ -1,7 +1,8 @@
 # Changelog
 
-## v0.5.5
+## v0.5.7
 
+- Improved mobile fit behavior and moved AI import usage stats to the end of recipe details for cleaner cooking views.
 - Added Basic Auth protection and a management login prompt for Settings, imports, backups, and recipe/tag management while keeping recipe browsing public.
 - Applied the TL Platform Design System direction with the TL Recipe Core amber accent, softer dark SaaS surfaces, sidebar account treatment, and richer empty states.
 - Replaced interactive tag chips with multi-select dropdown controls for tag assignment and filtering.

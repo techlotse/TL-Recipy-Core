@@ -43,14 +43,30 @@
   box-sizing: border-box;
 }
 
+html {
+  width: 100%;
+  overflow-x: hidden;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
-  min-width: 320px;
+  min-width: 0;
+  width: 100%;
   min-height: 100vh;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at top left, rgba(245, 158, 11, 0.1), transparent 30rem),
     linear-gradient(145deg, var(--tl-bg-primary) 0%, #071021 48%, var(--tl-bg-secondary) 100%);
   color: var(--text);
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
 }
 
 button,
@@ -58,6 +74,7 @@ input,
 textarea,
 select {
   font: inherit;
+  font-size: 1rem;
 }
 
 button {
@@ -77,6 +94,7 @@ a {
 .app-shell {
   display: grid;
   grid-template-columns: 17rem minmax(0, 1fr);
+  width: 100%;
   min-height: 100vh;
 }
 
@@ -197,6 +215,7 @@ a {
 
 .view {
   width: min(1180px, 100%);
+  min-width: 0;
   margin: 0 auto;
 }
 
@@ -227,6 +246,7 @@ h2,
 h3,
 p {
   margin-top: 0;
+  overflow-wrap: anywhere;
 }
 
 h1 {
@@ -354,6 +374,7 @@ h3 {
 }
 
 .tag-chip {
+  max-width: 100%;
   min-height: 2rem;
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -647,6 +668,7 @@ h3 {
 }
 
 .detail-copy {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -666,10 +688,12 @@ h3 {
   display: grid;
   grid-template-columns: minmax(18rem, 0.75fr) minmax(0, 1fr);
   gap: 1.1rem;
+  margin-bottom: 1.1rem;
 }
 
 .content-block,
 .surface {
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: var(--tl-radius-md);
   background:
@@ -681,7 +705,7 @@ h3 {
 }
 
 .usage-card {
-  margin-bottom: 1.1rem;
+  margin-top: 1.1rem;
 }
 
 .ingredient-list,
@@ -1075,6 +1099,7 @@ h3 {
 }
 
 .metric-grid div {
+  min-width: 0;
   display: grid;
   gap: 0.25rem;
   min-height: 5.2rem;
@@ -1092,6 +1117,7 @@ h3 {
 .metric-grid strong {
   align-self: end;
   font-size: 1.15rem;
+  overflow-wrap: anywhere;
 }
 
 .usage-table {
@@ -1257,6 +1283,19 @@ h3 {
     padding: 1rem;
   }
 
+  h1 {
+    font-size: 2rem;
+  }
+
+  h2 {
+    font-size: 1.45rem;
+  }
+
+  .detail-image {
+    min-height: 0;
+    aspect-ratio: 16 / 10;
+  }
+
   .detail-hero,
   .detail-grid,
   .form-grid,
@@ -1279,6 +1318,46 @@ h3 {
 }
 
 @media (max-width: 620px) {
+  .sidebar {
+    padding: 0.7rem;
+  }
+
+  .brand {
+    gap: 0.65rem;
+  }
+
+  .brand-mark {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .nav-item {
+    min-height: 2.55rem;
+    padding: 0.55rem 0.65rem;
+  }
+
+  .main-content {
+    padding: 0.75rem;
+  }
+
+  h1 {
+    font-size: 1.7rem;
+    line-height: 1.12;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+  }
+
+  h3 {
+    font-size: 1.08rem;
+  }
+
+  .view-header {
+    gap: 0.75rem;
+    margin-bottom: 0.9rem;
+  }
+
   .view-header,
   .review-layout,
   .wizard-actions,
@@ -1302,6 +1381,27 @@ h3 {
   .wizard-steps button {
     justify-content: flex-start;
     padding-left: 0.8rem;
+  }
+
+  .detail-hero {
+    gap: 0.85rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .detail-image {
+    aspect-ratio: 4 / 3;
+  }
+
+  .content-block,
+  .surface {
+    border-radius: var(--tl-radius-sm);
+    padding: 0.9rem;
+  }
+
+  .ingredient-list,
+  .step-list {
+    padding-left: 1rem;
+    line-height: 1.55;
   }
 
   .ingredient-row,
