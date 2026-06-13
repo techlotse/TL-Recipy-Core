@@ -81,6 +81,7 @@ export function mapRecipe(row) {
     translations: row.translations || {},
     tags: mapTags(row.tags),
     sourceUrl: row.source_url || '',
+    sourcePhotos: row.source_photos || [],
     importMode: row.import_mode,
     llmUsage,
     createdAt: row.created_at,
@@ -204,15 +205,15 @@ export async function createRecipe(input) {
     await client.query(
       `INSERT INTO recipes (
         id, title, short_description, image_url, active_time_minutes, total_time_minutes,
-        ingredients, steps, translations, source_url, import_mode, llm_provider, llm_model,
+        ingredients, steps, translations, source_url, source_photos, import_mode, llm_provider, llm_model,
         llm_input_tokens, llm_output_tokens, llm_total_tokens, llm_response_ms,
         llm_input_price_per_million_usd, llm_output_price_per_million_usd,
         llm_input_cost_usd, llm_output_cost_usd, llm_image_model, llm_image_count,
         llm_image_cost_usd, llm_total_cost_usd
       )
       VALUES (
-        $1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9::jsonb, $10, $11, $12, $13, $14, $15,
-        $16, $17, $18, $19, $20, $21, $22, $23, $24, $25
+        $1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9::jsonb, $10, $11::jsonb, $12, $13, $14, $15,
+        $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26
       )
       RETURNING *`,
       [
@@ -226,6 +227,7 @@ export async function createRecipe(input) {
         toDbJson(input.steps),
         toDbObject(input.translations),
         input.sourceUrl || null,
+        toDbJson(input.sourcePhotos),
         input.importMode || 'manual',
         input.llmUsage?.provider || null,
         input.llmUsage?.model || null,
@@ -264,7 +266,8 @@ export async function updateRecipe(recipeId, input) {
            steps = $8::jsonb,
            translations = $9::jsonb,
            source_url = $10,
-           import_mode = $11,
+           source_photos = COALESCE($11::jsonb, source_photos),
+           import_mode = $12,
            updated_at = NOW()
        WHERE id = $1
        RETURNING id`,
@@ -279,6 +282,7 @@ export async function updateRecipe(recipeId, input) {
         toDbJson(input.steps),
         toDbObject(input.translations),
         input.sourceUrl || null,
+        input.sourcePhotos === undefined ? null : JSON.stringify(input.sourcePhotos),
         input.importMode || 'manual'
       ]
     );

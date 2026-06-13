@@ -9,6 +9,7 @@ import {
 import { parseDurationToMinutes } from '../utils/duration.js';
 import { uniqueStrings } from '../utils/slug.js';
 import { recipeInputSchema } from '../validation.js';
+import { assertRecipeContentSafety } from '../utils/contentSafety.js';
 
 const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
 
@@ -183,6 +184,8 @@ export function buildVerbatimRecipe({ extracted, sourceText, sourceUrl }) {
     importMode: 'verbatim'
   };
 
+  // Verbatim imports never pass through the AI screen, so guard them here.
+  assertRecipeContentSafety(recipe);
   return recipeInputSchema.parse(recipe);
 }
 
@@ -275,6 +278,7 @@ export async function importRecipeFromPhotos({ photos, createToddlerVersion = fa
   const result = await normalizeRecipeFromPhotosWithOpenAi({ photos: normalizedPhotos, translationLanguages });
   const recipe = await createRecipe({
     ...result.recipe,
+    sourcePhotos: normalizedPhotos.map(({ name, type, dataUrl }) => ({ name, type, dataUrl })),
     llmUsage: result.llmUsage
   });
 

@@ -20,6 +20,7 @@ function recipeToBackup(recipe) {
     translations: recipe.translations || {},
     tags: (recipe.tags || []).map((tag) => tag.name),
     sourceUrl: recipe.sourceUrl,
+    sourcePhotos: recipe.sourcePhotos || [],
     importMode: recipe.importMode
   };
 }

@@ -1,0 +1,2 @@
+ALTER TABLE recipes
+  ADD COLUMN IF NOT EXISTS source_photos JSONB NOT NULL DEFAULT '[]'::jsonb;

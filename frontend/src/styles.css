@@ -1448,3 +1448,82 @@ h3 {
     width: 100%;
   }
 }
+
+.muted-note {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0.15rem 0 0.75rem;
+}
+
+.original-value.edited-hint {
+  color: var(--accent);
+}
+
+.source-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: 0.75rem;
+}
+
+.source-photo {
+  display: block;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--tl-radius-sm);
+  overflow: hidden;
+  background: transparent;
+  cursor: zoom-in;
+  aspect-ratio: 4 / 3;
+}
+
+.source-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.photo-lightbox {
+  position: fixed;
+  z-index: 110;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(2, 6, 23, 0.85);
+  padding: 1.25rem;
+  backdrop-filter: blur(10px);
+  cursor: zoom-out;
+}
+
+.photo-lightbox img {
+  max-width: min(100%, 64rem);
+  max-height: 90vh;
+  border-radius: var(--tl-radius-sm);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+}
+
+.ingredient-list.interactive li,
+.step-list li {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ingredient-list.interactive li.checked strong {
+  text-decoration: line-through;
+  opacity: 0.55;
+}
+
+.ingredient-list.interactive li.checked span {
+  opacity: 0.55;
+}
+
+.step-list li.done {
+  opacity: 0.5;
+  text-decoration: line-through;
+}

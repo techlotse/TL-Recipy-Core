@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.6.0
+
+- Added deterministic metric unit conversion with per-ingredient densities: dry/solid ingredients measured by volume now convert to grams using the density of that specific ingredient (1 cup flour ≈ 120 g, 1 cup desiccated coconut ≈ 85 g), and liquid ingredients convert to milliliters. Applied to all AI imports as a correction layer on top of strengthened AI conversion prompts, with unit tests.
+- Added a server-side import content safety guard that rejects dangerous or illegal "recipes" (explosives, drugs, poisons, weapons) and prompt-injection remnants on all import paths, including verbatim imports that never pass through the AI screen. AI prompts were also hardened with explicit rejection rules.
+- Photo imports now read handwritten recipes: the AI is instructed to carefully OCR printed and cursive handwriting in any language and flag unreadable parts instead of guessing.
+- Added screen keep-awake (Wake Lock) when the app runs as an installed webapp, plus a web app manifest and icon so it can be installed as a PWA.
+- Photo imports now store the uploaded source photos with the recipe, shown on the recipe page with a tap-to-enlarge lightbox; URL imports keep showing the source recipe link. Source photos are included in backups.
+- Added cooking mode niceties: tap ingredients to tick them off and tap method steps to mark them done while cooking.
+- Editing a recipe no longer drops the source URL, import mode, or stored source photos.
+- Recipe edit image uploads now accept files up to 8 MB and automatically downscale large images before saving.
+- Editing an ingredient amount now shows "(original ...)" behind the field and preserves the pre-edit amount with the recipe.
+
 ## v0.5.9
 
 - Added import-time recipe translation selection for English, German, and Afrikaans.

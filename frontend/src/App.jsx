@@ -90,7 +90,9 @@ const EN_MESSAGES = {
   originalRecipe: 'Original recipe',
   recipeTranslations: 'Recipe translations',
   generateMissingTranslations: 'Generate missing translations',
-  translationMissing: 'This recipe is not translated to the selected language yet.'
+  translationMissing: 'This recipe is not translated to the selected language yet.',
+  importPhotos: 'Import photos',
+  importPhotosHint: 'This recipe was imported from these photos.'
 };
 
 const I18nContext = createContext({
@@ -150,7 +152,9 @@ const MESSAGES = {
     originalRecipe: 'Originalrezept',
     recipeTranslations: 'Rezeptübersetzungen',
     generateMissingTranslations: 'Fehlende Übersetzungen erstellen',
-    translationMissing: 'Dieses Rezept ist noch nicht in die ausgewählte Sprache übersetzt.'
+    translationMissing: 'Dieses Rezept ist noch nicht in die ausgewählte Sprache übersetzt.',
+    importPhotos: 'Importfotos',
+    importPhotosHint: 'Dieses Rezept wurde aus diesen Fotos importiert.'
   },
   af: {
     recipes: 'Resepte',
@@ -200,7 +204,9 @@ const MESSAGES = {
     originalRecipe: 'Oorspronklike resep',
     recipeTranslations: 'Resepvertalings',
     generateMissingTranslations: 'Skep ontbrekende vertalings',
-    translationMissing: 'Hierdie resep is nog nie in die gekose taal vertaal nie.'
+    translationMissing: 'Hierdie resep is nog nie in die gekose taal vertaal nie.',
+    importPhotos: "Invoerfoto's",
+    importPhotosHint: "Hierdie resep is vanaf hierdie foto's ingevoer."
   }
 };
 
@@ -312,6 +318,75 @@ function useRoute() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
   return route;
+}
+
+function isStandaloneWebApp() {
+  return (
+    window.matchMedia?.('(display-mode: standalone)')?.matches === true ||
+    window.matchMedia?.('(display-mode: fullscreen)')?.matches === true ||
+    window.navigator.standalone === true
+  );
+}
+
+function useKeepAwake(enabled) {
+  useEffect(() => {
+    if (!enabled || !('wakeLock' in navigator)) return undefined;
+
+    let wakeLock = null;
+    let cancelled = false;
+
+    async function acquire() {
+      try {
+        wakeLock = await navigator.wakeLock.request('screen');
+      } catch {
+        // Wake locks can be rejected (battery saver, browser policy); keep the app usable.
+        wakeLock = null;
+      }
+    }
+
+    function onVisibilityChange() {
+      // The lock is released automatically when the tab is hidden; reacquire on return.
+      if (!cancelled && document.visibilityState === 'visible') acquire();
+    }
+
+    acquire();
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      wakeLock?.release?.().catch(() => {});
+      wakeLock = null;
+    };
+  }, [enabled]);
+}
+
+const MAX_UPLOAD_IMAGE_BYTES = 8 * 1024 * 1024;
+const MAX_UPLOAD_IMAGE_DIMENSION = 1600;
+
+function downscaleImageFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error(`Could not read ${file.name}`));
+    reader.onload = () => {
+      const image = new window.Image();
+      image.onerror = () => reject(new Error('Could not load the selected image'));
+      image.onload = () => {
+        const scale = Math.min(1, MAX_UPLOAD_IMAGE_DIMENSION / Math.max(image.width, image.height));
+        if (scale >= 1 && file.size <= 600000) {
+          resolve(String(reader.result));
+          return;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      image.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 function minutesLabel(minutes) {
@@ -712,10 +787,15 @@ function RecipeDetailPage({ id }) {
   const [translating, setTranslating] = useState(false);
   const [error, setError] = useState('');
   const [translationError, setTranslationError] = useState('');
+  const [enlargedPhoto, setEnlargedPhoto] = useState(null);
+  const [checkedIngredients, setCheckedIngredients] = useState(() => new Set());
+  const [completedSteps, setCompletedSteps] = useState(() => new Set());
 
   useEffect(() => {
     let active = true;
     setLoading(true);
+    setCheckedIngredients(new Set());
+    setCompletedSteps(new Set());
     api
       .getRecipe(id)
       .then((payload) => active && setRecipe(payload.recipe))
@@ -725,6 +805,15 @@ function RecipeDetailPage({ id }) {
       active = false;
     };
   }, [id]);
+
+  function toggleSetItem(setter, index) {
+    setter((current) => {
+      const next = new Set(current);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  }
 
   async function handleDelete() {
     if (!window.confirm('Delete this recipe?')) return;
@@ -842,9 +931,13 @@ function RecipeDetailPage({ id }) {
       <div className="detail-grid">
         <section className="content-block">
           <h2>{t('ingredients')}</h2>
-          <ul className="ingredient-list">
+          <ul className="ingredient-list interactive">
             {shownRecipe.ingredients.map((ingredient, index) => (
-              <li key={`${ingredient.name}-${index}`}>
+              <li
+                className={checkedIngredients.has(index) ? 'checked' : ''}
+                onClick={() => toggleSetItem(setCheckedIngredients, index)}
+                key={`${ingredient.name}-${index}`}
+              >
                 <strong>
                   {[ingredient.quantity, ingredient.unit].filter(Boolean).join(' ')}
                   {ingredient.quantity || ingredient.unit ? ' ' : ''}
@@ -867,7 +960,13 @@ function RecipeDetailPage({ id }) {
           <h2>{t('method')}</h2>
           <ol className="step-list">
             {shownRecipe.steps.map((step, index) => (
-              <li className={step.imageUrl ? 'illustrated-step' : ''} key={`${step.text}-${index}`}>
+              <li
+                className={[step.imageUrl ? 'illustrated-step' : '', completedSteps.has(index) ? 'done' : '']
+                  .filter(Boolean)
+                  .join(' ')}
+                onClick={() => toggleSetItem(setCompletedSteps, index)}
+                key={`${step.text}-${index}`}
+              >
                 {step.imageUrl && <img src={step.imageUrl} alt="" loading="lazy" />}
                 <span>{step.text}</span>
               </li>
@@ -876,7 +975,36 @@ function RecipeDetailPage({ id }) {
         </section>
       </div>
 
+      {recipe.sourcePhotos?.length > 0 && (
+        <section className="content-block">
+          <h2>{t('importPhotos')}</h2>
+          <p className="muted-note">{t('importPhotosHint')}</p>
+          <div className="source-photo-grid">
+            {recipe.sourcePhotos.map((photo, index) => (
+              <button
+                className="source-photo"
+                type="button"
+                key={`${photo.name}-${index}`}
+                title={photo.name || `Import photo ${index + 1}`}
+                onClick={() => setEnlargedPhoto(photo)}
+              >
+                <img src={photo.dataUrl} alt={photo.name || `Import photo ${index + 1}`} loading="lazy" />
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
       <LlmUsageCard usage={recipe.llmUsage} />
+
+      {enlargedPhoto && (
+        <div className="photo-lightbox" role="dialog" aria-modal="true" onClick={() => setEnlargedPhoto(null)}>
+          <button className="icon-button lightbox-close" type="button" title="Close" onClick={() => setEnlargedPhoto(null)}>
+            <X size={18} />
+          </button>
+          <img src={enlargedPhoto.dataUrl} alt={enlargedPhoto.name || 'Import photo'} />
+        </div>
+      )}
     </section>
   );
 }
@@ -981,7 +1109,9 @@ function AddRecipePage({ recipeId = null }) {
     ingredients: [{ ...emptyIngredient }],
     steps: [{ ...emptyStep }],
     tags: [],
-    translations: {}
+    translations: {},
+    sourceUrl: '',
+    importMode: 'manual'
   });
 
   useEffect(() => {
@@ -1001,10 +1131,15 @@ function AddRecipePage({ recipeId = null }) {
             imageUrl: loaded.imageUrl || '',
             activeTimeMinutes: loaded.activeTimeMinutes ?? '',
             totalTimeMinutes: loaded.totalTimeMinutes ?? '',
-            ingredients: loaded.ingredients?.length ? loaded.ingredients : [{ ...emptyIngredient }],
+            // Remember the loaded quantity/unit per row so edits can show "(original ...)".
+            ingredients: (loaded.ingredients?.length ? loaded.ingredients : [{ ...emptyIngredient }]).map(
+              (item) => ({ ...item, _loadedQuantity: item.quantity, _loadedUnit: item.unit })
+            ),
             steps: loaded.steps?.length ? loaded.steps : [{ ...emptyStep }],
             tags: tagNames(loaded),
-            translations: loaded.translations || {}
+            translations: loaded.translations || {},
+            sourceUrl: loaded.sourceUrl || '',
+            importMode: loaded.importMode || 'manual'
           });
         }
       })
@@ -1057,16 +1192,20 @@ function AddRecipePage({ recipeId = null }) {
     setNewTag('');
   }
 
-  function handleImageUpload(event) {
+  async function handleImageUpload(event) {
     const file = event.target.files?.[0];
+    event.target.value = '';
     if (!file) return;
-    if (file.size > 1500000) {
-      setError('Image uploads are limited to 1.5 MB for the MVP.');
+    if (file.size > MAX_UPLOAD_IMAGE_BYTES) {
+      setError('Image uploads are limited to 8 MB.');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => updateRecipe('imageUrl', reader.result);
-    reader.readAsDataURL(file);
+    try {
+      setError('');
+      updateRecipe('imageUrl', await downscaleImageFile(file));
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   async function saveRecipe() {
@@ -1077,7 +1216,17 @@ function AddRecipePage({ recipeId = null }) {
         ...recipe,
         activeTimeMinutes: toNumberOrNull(recipe.activeTimeMinutes),
         totalTimeMinutes: toNumberOrNull(recipe.totalTimeMinutes),
-        ingredients: recipe.ingredients.filter((item) => item.name.trim()),
+        ingredients: recipe.ingredients
+          .filter((item) => item.name.trim())
+          .map(({ _loadedQuantity, _loadedUnit, ...item }) => {
+            const amountChanged =
+              _loadedQuantity !== undefined &&
+              (item.quantity !== _loadedQuantity || item.unit !== _loadedUnit);
+            if (amountChanged && !item.originalQuantity && !item.originalUnit && (_loadedQuantity || _loadedUnit)) {
+              return { ...item, originalQuantity: _loadedQuantity, originalUnit: _loadedUnit };
+            }
+            return item;
+          }),
         steps: recipe.steps.filter((item) => item.text.trim())
       };
       const result = isEditing ? await api.updateRecipe(recipeId, payload) : await api.createRecipe(payload);
@@ -1164,7 +1313,17 @@ function AddRecipePage({ recipeId = null }) {
 
         {stepIndex === 1 && (
           <div className="stack">
-            {recipe.ingredients.map((ingredient, index) => (
+            {recipe.ingredients.map((ingredient, index) => {
+              const loadedAmountLabel = [ingredient._loadedQuantity, ingredient._loadedUnit]
+                .filter(Boolean)
+                .join(' ');
+              const amountChanged =
+                isEditing &&
+                ingredient._loadedQuantity !== undefined &&
+                Boolean(loadedAmountLabel) &&
+                (ingredient.quantity !== ingredient._loadedQuantity || ingredient.unit !== ingredient._loadedUnit);
+
+              return (
               <div className="line-item ingredient-row" key={index}>
                 <input
                   placeholder="Ingredient"
@@ -1186,6 +1345,7 @@ function AddRecipePage({ recipeId = null }) {
                   value={ingredient.notes}
                   onChange={(event) => updateArrayItem('ingredients', index, 'notes', event.target.value)}
                 />
+                {amountChanged && <div className="original-value edited-hint">(original {loadedAmountLabel})</div>}
                 {(ingredient.originalText || ingredient.originalQuantity || ingredient.originalUnit) && (
                   <div className="original-value">
                     Original:{' '}
@@ -1203,7 +1363,8 @@ function AddRecipePage({ recipeId = null }) {
                   <Trash2 size={17} />
                 </button>
               </div>
-            ))}
+              );
+            })}
             <button className="secondary-button" type="button" onClick={() => addArrayItem('ingredients', { ...emptyIngredient })}>
               <Plus size={18} />
               Add ingredient
@@ -1447,7 +1608,7 @@ function ImportPage() {
           >
             <UploadCloud size={22} />
             <strong>Recipe photos</strong>
-            <span>Upload up to five photos and extract the recipe with ChatGPT assistance.</span>
+            <span>Upload up to five photos — printed or handwritten — and extract the recipe with AI assistance.</span>
           </button>
         </div>
 
@@ -1487,7 +1648,7 @@ function ImportPage() {
           <div className="photo-import-panel">
             <label className={`photo-drop ${photos.length >= MAX_IMPORT_PHOTOS ? 'disabled' : ''}`}>
               <UploadCloud size={24} />
-              <strong>Upload recipe photos</strong>
+              <strong>Upload recipe photos (printed or handwritten)</strong>
               <span>
                 PNG, JPEG, or WebP. Up to {MAX_IMPORT_PHOTOS} photos, {fileSizeLabel(MAX_IMPORT_PHOTO_BYTES)} each.
               </span>
@@ -2078,6 +2239,8 @@ function SaasManagementPage() {
 
 export default function App() {
   const route = useRoute();
+  // Keep the screen awake while cooking when the app runs as an installed webapp.
+  useKeepAwake(isStandaloneWebApp());
   const initialAuthHeader = useRef(getStoredAuthHeader());
   const authHeaderRef = useRef(initialAuthHeader.current);
   const authWaitersRef = useRef([]);

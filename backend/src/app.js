@@ -18,7 +18,8 @@ const appVersion = JSON.parse(
 
 export function createApp() {
   const app = express();
-  const defaultJsonParser = express.json({ limit: '3mb' });
+  // Recipes can carry data-URL cover images and AI step images, so allow larger bodies.
+  const defaultJsonParser = express.json({ limit: '30mb' });
 
   app.use(requireBasicAuth);
 

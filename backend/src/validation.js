@@ -61,6 +61,15 @@ const tagInputSchema = z
   ])
   .transform((value) => (typeof value === 'string' ? value : value.name));
 
+const sourcePhotoSchema = z.object({
+  name: z.string().trim().max(255).optional().default(''),
+  type: z.string().trim().optional().default(''),
+  dataUrl: z
+    .string()
+    .trim()
+    .regex(/^data:image\/(jpeg|jpg|png|webp);base64,[a-z0-9+/=\s]+$/i, 'Source photos must be PNG, JPEG, or WebP')
+});
+
 export const recipeInputSchema = z.object({
   title: z.string().trim().min(2, 'Title is required'),
   shortDescription: z.string().trim().optional().default(''),
@@ -80,6 +89,8 @@ export const recipeInputSchema = z.object({
     .optional()
     .default({}),
   sourceUrl: z.string().trim().url().optional().or(z.literal('')).default(''),
+  // Optional on purpose (no default): updates that omit sourcePhotos keep the stored ones.
+  sourcePhotos: z.array(sourcePhotoSchema).max(5).optional(),
   importMode: z.enum(['manual', 'verbatim', 'ai']).optional().default('manual'),
   llmUsage: z
     .object({
