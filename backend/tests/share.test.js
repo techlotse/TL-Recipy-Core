@@ -83,3 +83,22 @@ test('toPublicRecipe sanitizes translations the same way', () => {
 test('toPublicRecipe handles null', () => {
   assert.equal(toPublicRecipe(null), null);
 });
+
+import { shareRequestSchema, SHARE_EXPIRY_HOURS } from '../src/validation.js';
+
+test('shareRequestSchema defaults to no expiry', () => {
+  assert.equal(shareRequestSchema.parse({}).expiresInHours, null);
+  assert.equal(shareRequestSchema.parse({ expiresInHours: null }).expiresInHours, null);
+});
+
+test('shareRequestSchema accepts the allowed lifetimes', () => {
+  for (const hours of SHARE_EXPIRY_HOURS) {
+    assert.equal(shareRequestSchema.parse({ expiresInHours: hours }).expiresInHours, hours);
+  }
+});
+
+test('shareRequestSchema rejects unsupported lifetimes', () => {
+  assert.throws(() => shareRequestSchema.parse({ expiresInHours: 5 }));
+  assert.throws(() => shareRequestSchema.parse({ expiresInHours: -1 }));
+  assert.throws(() => shareRequestSchema.parse({ expiresInHours: 'soon' }));
+});

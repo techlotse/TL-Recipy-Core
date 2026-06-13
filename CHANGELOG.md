@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.8.0
+
+- Added recipe nutrition estimates (issue #7, v1): a "Calculate nutrition" action on each recipe estimates calories, protein, carbs, fat, fiber, sugar, and sodium per serving and for the whole recipe, with the assumed serving count. Values are AI-estimated from the final ingredient list and shown with a clear "estimate only, not medical/dietary advice" disclaimer. Stored on the recipe and recalculable. (v2 healthy-balance assessment remains future work.)
+- Added an optional expiry when creating a share link (no expiry by default): choose 1 hour, 24 hours, 7 days, or 30 days. Expired links stop resolving server-side, and the share dialog shows when a link expires.
+- Backend: POST /api/recipes/:id/nutrition (auth) estimates and stores nutrition; share enable accepts a validated expiresInHours; migrations 008 (share_expires_at) and 009 (nutrition).
+
 ## v0.7.0
 
 - Added per-recipe sharing (issue #4): a Share button on each recipe creates a private link that opens a clean, standalone read-only view of just that recipe — no sidebar, no access to the rest of the library. The link can be copied, shared via the device share sheet, or revoked ("Stop sharing").

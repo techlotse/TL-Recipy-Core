@@ -162,6 +162,20 @@ export const verifyOpenAiInputSchema = z.object({
   model: z.enum(OPENAI_MODEL_OPTIONS.map((option) => option.id)).optional()
 });
 
+// Allowed share-link lifetimes in hours. null/absent => no expiry (default).
+export const SHARE_EXPIRY_HOURS = [1, 24, 168, 720];
+
+export const shareRequestSchema = z.object({
+  expiresInHours: z
+    .union([z.literal(null), z.number().int().positive()])
+    .optional()
+    .transform((value) => (value === undefined ? null : value))
+    .refine(
+      (value) => value === null || SHARE_EXPIRY_HOURS.includes(value),
+      'Unsupported share expiry'
+    )
+});
+
 export const backupImportSchema = z.object({
   version: z.string().optional(),
   recipes: z.array(recipeInputSchema).min(1, 'Backup contains no recipes')

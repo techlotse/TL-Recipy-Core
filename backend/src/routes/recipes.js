@@ -1,6 +1,6 @@
 import express from 'express';
 import { asyncHandler } from '../errors.js';
-import { recipeInputSchema, recipeTranslationRequestSchema } from '../validation.js';
+import { recipeInputSchema, recipeTranslationRequestSchema, shareRequestSchema } from '../validation.js';
 import {
   addRecipeTranslations,
   createRecipe,
@@ -9,9 +9,10 @@ import {
   enableRecipeShare,
   getRecipe,
   listRecipes,
+  setRecipeNutrition,
   updateRecipe
 } from '../services/recipeStore.js';
-import { translateRecipeWithOpenAi } from '../services/aiService.js';
+import { estimateRecipeNutritionWithOpenAi, translateRecipeWithOpenAi } from '../services/aiService.js';
 
 export const recipesRouter = express.Router();
 
@@ -62,10 +63,20 @@ recipesRouter.post(
 );
 
 recipesRouter.post(
+  '/:id/nutrition',
+  asyncHandler(async (req, res) => {
+    const recipe = await getRecipe(req.params.id);
+    const result = await estimateRecipeNutritionWithOpenAi({ recipe });
+    res.json({ recipe: await setRecipeNutrition(req.params.id, result.nutrition, result.llmUsage) });
+  })
+);
+
+recipesRouter.post(
   '/:id/share',
   asyncHandler(async (req, res) => {
+    const { expiresInHours } = shareRequestSchema.parse(req.body || {});
     // Idempotent: enabling an already-shared recipe returns the same token.
-    res.json(await enableRecipeShare(req.params.id));
+    res.json(await enableRecipeShare(req.params.id, expiresInHours));
   })
 );
 

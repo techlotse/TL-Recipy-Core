@@ -107,7 +107,31 @@ const EN_MESSAGES = {
   openSharedView: 'Open shared view',
   sharedRecipe: 'Shared recipe',
   sharedRecipeMissing: 'This shared recipe is no longer available.',
-  recipeBy: 'Recipe'
+  recipeBy: 'Recipe',
+  shareExpiry: 'Link expiry',
+  expiryNone: 'No expiry',
+  expiry1h: '1 hour',
+  expiry24h: '24 hours',
+  expiry7d: '7 days',
+  expiry30d: '30 days',
+  createLink: 'Create link',
+  neverExpires: 'This link never expires.',
+  expiresOn: 'Expires',
+  nutrition: 'Nutrition',
+  nutritionTitle: 'Nutritional values',
+  calculateNutrition: 'Calculate nutrition',
+  recalculateNutrition: 'Recalculate',
+  perServing: 'Per serving',
+  wholeRecipe: 'Whole recipe',
+  servingsLabel: 'Servings',
+  calories: 'Calories',
+  protein: 'Protein',
+  carbs: 'Carbs',
+  fat: 'Fat',
+  fiber: 'Fiber',
+  sugar: 'Sugar',
+  sodium: 'Sodium',
+  nutritionDisclaimer: 'Estimated values — for general guidance only, not medical or dietary advice.'
 };
 
 const I18nContext = createContext({
@@ -181,7 +205,31 @@ const MESSAGES = {
     openSharedView: 'Geteilte Ansicht öffnen',
     sharedRecipe: 'Geteiltes Rezept',
     sharedRecipeMissing: 'Dieses geteilte Rezept ist nicht mehr verfügbar.',
-    recipeBy: 'Rezept'
+    recipeBy: 'Rezept',
+    shareExpiry: 'Link-Ablauf',
+    expiryNone: 'Kein Ablauf',
+    expiry1h: '1 Stunde',
+    expiry24h: '24 Stunden',
+    expiry7d: '7 Tage',
+    expiry30d: '30 Tage',
+    createLink: 'Link erstellen',
+    neverExpires: 'Dieser Link läuft nie ab.',
+    expiresOn: 'Läuft ab',
+    nutrition: 'Nährwerte',
+    nutritionTitle: 'Nährwertangaben',
+    calculateNutrition: 'Nährwerte berechnen',
+    recalculateNutrition: 'Neu berechnen',
+    perServing: 'Pro Portion',
+    wholeRecipe: 'Ganzes Rezept',
+    servingsLabel: 'Portionen',
+    calories: 'Kalorien',
+    protein: 'Eiweiß',
+    carbs: 'Kohlenhydrate',
+    fat: 'Fett',
+    fiber: 'Ballaststoffe',
+    sugar: 'Zucker',
+    sodium: 'Natrium',
+    nutritionDisclaimer: 'Geschätzte Werte — nur zur allgemeinen Orientierung, keine medizinische oder Ernährungsberatung.'
   },
   af: {
     recipes: 'Resepte',
@@ -245,7 +293,31 @@ const MESSAGES = {
     openSharedView: 'Open gedeelde aansig',
     sharedRecipe: 'Gedeelde resep',
     sharedRecipeMissing: 'Hierdie gedeelde resep is nie meer beskikbaar nie.',
-    recipeBy: 'Resep'
+    recipeBy: 'Resep',
+    shareExpiry: 'Skakel verval',
+    expiryNone: 'Geen verval',
+    expiry1h: '1 uur',
+    expiry24h: '24 uur',
+    expiry7d: '7 dae',
+    expiry30d: '30 dae',
+    createLink: 'Skep skakel',
+    neverExpires: 'Hierdie skakel verval nooit nie.',
+    expiresOn: 'Verval',
+    nutrition: 'Voedingswaarde',
+    nutritionTitle: 'Voedingswaardes',
+    calculateNutrition: 'Bereken voedingswaarde',
+    recalculateNutrition: 'Herbereken',
+    perServing: 'Per porsie',
+    wholeRecipe: 'Hele resep',
+    servingsLabel: 'Porsies',
+    calories: 'Kalorieë',
+    protein: 'Proteïen',
+    carbs: 'Koolhidrate',
+    fat: 'Vet',
+    fiber: 'Vesel',
+    sugar: 'Suiker',
+    sodium: 'Natrium',
+    nutritionDisclaimer: 'Geskatte waardes — slegs vir algemene riglyne, nie mediese of dieetadvies nie.'
   }
 };
 
@@ -590,6 +662,52 @@ function TimeMeta({ recipe }) {
   );
 }
 
+function nutritionRow(value, unit) {
+  if (value === null || value === undefined) return '—';
+  return `${numberLabel(value)}${unit}`;
+}
+
+function NutritionCard({ nutrition }) {
+  const { t } = useI18n();
+  if (!nutrition) return null;
+
+  const rows = [
+    { key: 'calories', label: t('calories'), unit: ' kcal' },
+    { key: 'proteinGrams', label: t('protein'), unit: ' g' },
+    { key: 'carbsGrams', label: t('carbs'), unit: ' g' },
+    { key: 'fatGrams', label: t('fat'), unit: ' g' },
+    { key: 'fiberGrams', label: t('fiber'), unit: ' g' },
+    { key: 'sugarGrams', label: t('sugar'), unit: ' g' },
+    { key: 'sodiumMg', label: t('sodium'), unit: ' mg' }
+  ];
+  const perServing = nutrition.perServing || {};
+  const total = nutrition.total || {};
+
+  return (
+    <div className="nutrition-card">
+      {nutrition.servings ? (
+        <p className="muted-note">
+          {t('servingsLabel')}: {numberLabel(nutrition.servings)}
+        </p>
+      ) : null}
+      <div className="nutrition-table">
+        <div className="nutrition-table-header">
+          <span>{t('nutrition')}</span>
+          <span>{t('perServing')}</span>
+          <span>{t('wholeRecipe')}</span>
+        </div>
+        {rows.map((row) => (
+          <div className="nutrition-table-row" key={row.key}>
+            <span>{row.label}</span>
+            <span>{nutritionRow(perServing[row.key], row.unit)}</span>
+            <span>{nutritionRow(total[row.key], row.unit)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function LlmUsageCard({ usage }) {
   const { t } = useI18n();
   if (!usage) return null;
@@ -837,6 +955,10 @@ function RecipeDetailPage({ id }) {
   const [shareBusy, setShareBusy] = useState(false);
   const [shareError, setShareError] = useState('');
   const [shareCopied, setShareCopied] = useState(false);
+  const [shareExpiry, setShareExpiry] = useState('');
+  const [shareExpiresAt, setShareExpiresAt] = useState(null);
+  const [nutritionBusy, setNutritionBusy] = useState(false);
+  const [nutritionError, setNutritionError] = useState('');
   const [checkedIngredients, setCheckedIngredients] = useState(() => new Set());
   const [completedSteps, setCompletedSteps] = useState(() => new Set());
 
@@ -868,15 +990,25 @@ function RecipeDetailPage({ id }) {
     });
   }
 
-  async function openShare() {
+  function openShare() {
     setShareOpen(true);
     setShareError('');
     setShareCopied(false);
-    if (shareUrl) return;
+    // Start each share session from the chooser; default is no expiry.
+    setShareUrl('');
+    setShareExpiresAt(null);
+    setShareExpiry('');
+  }
+
+  async function createShareLink() {
     setShareBusy(true);
+    setShareError('');
     try {
-      const payload = await api.enableRecipeShare(id);
+      const payload = await api.enableRecipeShare(id, {
+        expiresInHours: shareExpiry ? Number(shareExpiry) : null
+      });
       setShareUrl(buildShareUrl(payload.shareToken));
+      setShareExpiresAt(payload.shareExpiresAt || null);
       setShareEnabled(true);
     } catch (err) {
       setShareError(err.message);
@@ -911,11 +1043,25 @@ function RecipeDetailPage({ id }) {
       await api.disableRecipeShare(id);
       setShareEnabled(false);
       setShareUrl('');
+      setShareExpiresAt(null);
       setShareOpen(false);
     } catch (err) {
       setShareError(err.message);
     } finally {
       setShareBusy(false);
+    }
+  }
+
+  async function calculateNutrition() {
+    setNutritionBusy(true);
+    setNutritionError('');
+    try {
+      const payload = await api.calculateNutrition(id);
+      setRecipe(payload.recipe);
+    } catch (err) {
+      setNutritionError(err.message);
+    } finally {
+      setNutritionBusy(false);
     }
   }
 
@@ -1083,6 +1229,28 @@ function RecipeDetailPage({ id }) {
         </section>
       </div>
 
+      <section className="content-block nutrition-section">
+        <div className="nutrition-action-row">
+          <div>
+            <p className="eyebrow">{t('nutrition')}</p>
+            <h2>{t('nutritionTitle')}</h2>
+          </div>
+          <button className="secondary-button" type="button" onClick={calculateNutrition} disabled={nutritionBusy}>
+            {nutritionBusy ? <Loader2 className="spin" size={18} /> : <Gauge size={18} />}
+            {recipe.nutrition ? t('recalculateNutrition') : t('calculateNutrition')}
+          </button>
+        </div>
+        {nutritionError && <div className="state error compact">{nutritionError}</div>}
+        {recipe.nutrition ? (
+          <>
+            <NutritionCard nutrition={recipe.nutrition} />
+            <p className="nutrition-disclaimer">{t('nutritionDisclaimer')}</p>
+          </>
+        ) : (
+          !nutritionBusy && <p className="muted-note">{t('nutritionDisclaimer')}</p>
+        )}
+      </section>
+
       {recipe.sourcePhotos?.length > 0 && (
         <section className="content-block">
           <h2>{t('importPhotos')}</h2>
@@ -1122,12 +1290,24 @@ function RecipeDetailPage({ id }) {
             <p className="eyebrow">{t('share')}</p>
             <h2>{t('shareRecipe')}</h2>
             <p>{t('shareHint')}</p>
-            {shareBusy && !shareUrl ? (
-              <div className="state">
-                <Loader2 className="spin" size={18} />
-                Loading
+            {!shareUrl ? (
+              <div className="share-create">
+                <label className="field compact-field">
+                  <span>{t('shareExpiry')}</span>
+                  <select value={shareExpiry} onChange={(event) => setShareExpiry(event.target.value)} disabled={shareBusy}>
+                    <option value="">{t('expiryNone')}</option>
+                    <option value="1">{t('expiry1h')}</option>
+                    <option value="24">{t('expiry24h')}</option>
+                    <option value="168">{t('expiry7d')}</option>
+                    <option value="720">{t('expiry30d')}</option>
+                  </select>
+                </label>
+                <button className="primary-button" type="button" onClick={createShareLink} disabled={shareBusy}>
+                  {shareBusy ? <Loader2 className="spin" size={18} /> : <Share2 size={18} />}
+                  {t('createLink')}
+                </button>
               </div>
-            ) : shareUrl ? (
+            ) : (
               <>
                 <div className="share-link-row">
                   <input readOnly value={shareUrl} onFocus={(event) => event.target.select()} />
@@ -1136,6 +1316,11 @@ function RecipeDetailPage({ id }) {
                     {shareCopied ? t('linkCopied') : t('copyLink')}
                   </button>
                 </div>
+                <p className="share-expiry-note">
+                  {shareExpiresAt
+                    ? `${t('expiresOn')} ${new Date(shareExpiresAt).toLocaleString()}`
+                    : t('neverExpires')}
+                </p>
                 <div className="share-actions">
                   {typeof navigator !== 'undefined' && navigator.share && (
                     <button className="secondary-button" type="button" onClick={nativeShare}>
@@ -1153,7 +1338,7 @@ function RecipeDetailPage({ id }) {
                   </button>
                 </div>
               </>
-            ) : null}
+            )}
             {shareError && <div className="state error compact">{shareError}</div>}
           </div>
         </div>

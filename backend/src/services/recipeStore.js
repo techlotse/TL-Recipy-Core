@@ -84,6 +84,7 @@ export function mapRecipe(row) {
     sourcePhotos: row.source_photos || [],
     importMode: row.import_mode,
     shareEnabled: Boolean(row.share_enabled),
+    nutrition: row.nutrition || null,
     llmUsage,
     createdAt: row.created_at,
     updatedAt: row.updated_at
@@ -341,6 +342,53 @@ export async function addRecipeTranslations(recipeId, translations, llmUsage) {
   return getRecipe(recipeId);
 }
 
+export async function setRecipeNutrition(recipeId, nutrition, llmUsage) {
+  const current = await getRecipe(recipeId);
+  const usage = mergeUsage(current.llmUsage, llmUsage);
+
+  const result = await query(
+    `UPDATE recipes
+     SET nutrition = $2::jsonb,
+         llm_provider = $3,
+         llm_model = $4,
+         llm_input_tokens = $5,
+         llm_output_tokens = $6,
+         llm_total_tokens = $7,
+         llm_response_ms = $8,
+         llm_input_price_per_million_usd = $9,
+         llm_output_price_per_million_usd = $10,
+         llm_input_cost_usd = $11,
+         llm_output_cost_usd = $12,
+         llm_image_model = $13,
+         llm_image_count = $14,
+         llm_image_cost_usd = $15,
+         llm_total_cost_usd = $16,
+         updated_at = NOW()
+     WHERE id = $1
+     RETURNING id`,
+    [
+      recipeId,
+      toDbObject(nutrition),
+      usage?.provider || null,
+      usage?.model || null,
+      usage?.inputTokens ?? null,
+      usage?.outputTokens ?? null,
+      usage?.totalTokens ?? null,
+      usage?.responseMs ?? null,
+      usage?.inputPricePerMillionUsd ?? null,
+      usage?.outputPricePerMillionUsd ?? null,
+      usage?.inputCostUsd ?? null,
+      usage?.outputCostUsd ?? null,
+      usage?.imageModel || null,
+      usage?.imageCount ?? null,
+      usage?.imageCostUsd ?? null,
+      usage?.totalCostUsd ?? null
+    ]
+  );
+  if (!result.rowCount) throw notFound('Recipe not found');
+  return getRecipe(recipeId);
+}
+
 export async function deleteRecipe(recipeId) {
   const result = await query('DELETE FROM recipes WHERE id = $1', [recipeId]);
   if (!result.rowCount) throw notFound('Recipe not found');
@@ -435,26 +483,32 @@ export function toPublicRecipe(recipe) {
   };
 }
 
-export async function enableRecipeShare(recipeId) {
-  const existing = await getRecipe(recipeId);
-  let token = existing.shareToken;
-  if (!token) {
-    const result = await query('SELECT share_token FROM recipes WHERE id = $1', [recipeId]);
-    token = result.rows[0]?.share_token || null;
-  }
-  if (!token) token = crypto.randomUUID().replace(/-/g, '');
+export async function enableRecipeShare(recipeId, expiresInHours = null) {
+  const hours =
+    expiresInHours === null || expiresInHours === undefined || !Number.isFinite(Number(expiresInHours))
+      ? null
+      : Math.round(Number(expiresInHours));
+
+  const existingResult = await query('SELECT share_token FROM recipes WHERE id = $1', [recipeId]);
+  if (!existingResult.rowCount) throw notFound('Recipe not found');
+  const token = existingResult.rows[0].share_token || crypto.randomUUID().replace(/-/g, '');
 
   const result = await query(
     `UPDATE recipes
      SET share_token = COALESCE(share_token, $2),
          share_enabled = TRUE,
+         share_expires_at = CASE WHEN $3::int IS NULL THEN NULL ELSE NOW() + make_interval(hours => $3::int) END,
          updated_at = NOW()
      WHERE id = $1
-     RETURNING share_token`,
-    [recipeId, token]
+     RETURNING share_token, share_expires_at`,
+    [recipeId, token, hours]
   );
   if (!result.rowCount) throw notFound('Recipe not found');
-  return { shareToken: result.rows[0].share_token, shareEnabled: true };
+  return {
+    shareToken: result.rows[0].share_token,
+    shareEnabled: true,
+    shareExpiresAt: result.rows[0].share_expires_at || null
+  };
 }
 
 export async function disableRecipeShare(recipeId) {
@@ -476,7 +530,9 @@ export async function getSharedRecipeByToken(token) {
 
   const result = await query(
     `${recipeSelect}
-     WHERE r.share_token = $1 AND r.share_enabled = TRUE
+     WHERE r.share_token = $1
+       AND r.share_enabled = TRUE
+       AND (r.share_expires_at IS NULL OR r.share_expires_at > NOW())
      GROUP BY r.id`,
     [cleanToken]
   );

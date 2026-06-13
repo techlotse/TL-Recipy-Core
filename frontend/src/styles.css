@@ -1679,3 +1679,72 @@ h3 {
     break-inside: avoid;
   }
 }
+
+.share-create {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.share-create .field {
+  flex: 1 1 12rem;
+}
+
+.share-expiry-note {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.nutrition-action-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.nutrition-table {
+  display: grid;
+  border: 1px solid var(--line);
+  border-radius: var(--tl-radius-sm);
+  overflow: hidden;
+  margin-top: 0.4rem;
+}
+
+.nutrition-table-header,
+.nutrition-table-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.nutrition-table-header {
+  background: rgba(255, 255, 255, 0.04);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.nutrition-table-row {
+  border-top: 1px solid var(--line);
+}
+
+.nutrition-table-row span:first-child {
+  color: var(--muted);
+}
+
+.nutrition-disclaimer {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-top: 0.6rem;
+}
+
+@media print {
+  .nutrition-table-header {
+    color: #333;
+    background: #f3f3f3;
+  }
+}

@@ -1,0 +1,2 @@
+ALTER TABLE recipes
+  ADD COLUMN IF NOT EXISTS share_expires_at TIMESTAMPTZ NULL;
