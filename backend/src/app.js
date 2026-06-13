@@ -9,6 +9,7 @@ import { tagsRouter } from './routes/tags.js';
 import { importsRouter } from './routes/imports.js';
 import { settingsRouter } from './routes/settings.js';
 import { backupsRouter } from './routes/backups.js';
+import { shareRouter } from './routes/share.js';
 import { requireBasicAuth } from './middleware/basicAuth.js';
 import { getPublicPreferences } from './services/settingsStore.js';
 
@@ -52,6 +53,7 @@ export function createApp() {
   app.use('/api/imports', importsRouter);
   app.use('/api/settings', settingsRouter);
   app.use('/api/backups', backupsRouter);
+  app.use('/api/share', shareRouter);
 
   if (existsSync(config.frontendDist)) {
     app.use(express.static(config.frontendDist));

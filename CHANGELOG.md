@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.7.0
+
+- Added per-recipe sharing (issue #4): a Share button on each recipe creates a private link that opens a clean, standalone read-only view of just that recipe — no sidebar, no access to the rest of the library. The link can be copied, shared via the device share sheet, or revoked ("Stop sharing").
+- The shared view excludes diagnostic/comparative data: only the final ingredient list, method, and picture are shown — no pre-conversion original values, import source photos, source URL, or AI usage. Language switching is available when translations exist.
+- Added "Save as PDF" on the shared view via a print-optimized layout, so a recipe can be shared as a PDF with just the final ingredients, method, and picture.
+- Backend: public unauthenticated GET /api/share/:token returns a sanitized recipe; POST/DELETE /api/recipes/:id/share (auth-protected) enable/revoke sharing with a random token; migration 007 adds share_token/share_enabled.
+
 ## v0.6.0
 
 - Added deterministic metric unit conversion with per-ingredient densities: dry/solid ingredients measured by volume now convert to grams using the density of that specific ingredient (1 cup flour ≈ 120 g, 1 cup desiccated coconut ≈ 85 g), and liquid ingredients convert to milliliters. Applied to all AI imports as a correction layer on top of strengthened AI conversion prompts, with unit tests.

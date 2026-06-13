@@ -83,6 +83,7 @@ export function mapRecipe(row) {
     sourceUrl: row.source_url || '',
     sourcePhotos: row.source_photos || [],
     importMode: row.import_mode,
+    shareEnabled: Boolean(row.share_enabled),
     llmUsage,
     createdAt: row.created_at,
     updatedAt: row.updated_at
@@ -381,4 +382,106 @@ export async function createTag(name) {
     isCategory: isCategoryName(result.rows[0].name),
     recipeCount: 0
   };
+}
+
+// A trimmed, read-only recipe safe to expose on a public share link. It drops
+// pre-conversion "original" values, import/source diagnostics, and LLM usage —
+// just the final ingredient list, method, and picture (issue #4).
+function toPublicIngredient(ingredient) {
+  return {
+    name: ingredient?.name || '',
+    quantity: ingredient?.quantity || '',
+    unit: ingredient?.unit || '',
+    notes: ingredient?.notes || ''
+  };
+}
+
+function toPublicStep(step) {
+  return {
+    text: step?.text || '',
+    imageUrl: step?.imageUrl || ''
+  };
+}
+
+function toPublicTranslation(translation) {
+  if (!translation || typeof translation !== 'object') return translation;
+  return {
+    title: translation.title || '',
+    shortDescription: translation.shortDescription || '',
+    ingredients: (translation.ingredients || []).map(toPublicIngredient),
+    steps: (translation.steps || []).map(toPublicStep),
+    tags: translation.tags || []
+  };
+}
+
+export function toPublicRecipe(recipe) {
+  if (!recipe) return null;
+  const translations = {};
+  for (const [language, value] of Object.entries(recipe.translations || {})) {
+    translations[language] = toPublicTranslation(value);
+  }
+
+  return {
+    id: recipe.id,
+    title: recipe.title,
+    shortDescription: recipe.shortDescription || '',
+    imageUrl: recipe.imageUrl || '',
+    activeTimeMinutes: recipe.activeTimeMinutes,
+    totalTimeMinutes: recipe.totalTimeMinutes,
+    ingredients: (recipe.ingredients || []).map(toPublicIngredient),
+    steps: (recipe.steps || []).map(toPublicStep),
+    tags: (recipe.tags || []).map((tag) => (typeof tag === 'string' ? tag : tag.name)),
+    translations
+  };
+}
+
+export async function enableRecipeShare(recipeId) {
+  const existing = await getRecipe(recipeId);
+  let token = existing.shareToken;
+  if (!token) {
+    const result = await query('SELECT share_token FROM recipes WHERE id = $1', [recipeId]);
+    token = result.rows[0]?.share_token || null;
+  }
+  if (!token) token = crypto.randomUUID().replace(/-/g, '');
+
+  const result = await query(
+    `UPDATE recipes
+     SET share_token = COALESCE(share_token, $2),
+         share_enabled = TRUE,
+         updated_at = NOW()
+     WHERE id = $1
+     RETURNING share_token`,
+    [recipeId, token]
+  );
+  if (!result.rowCount) throw notFound('Recipe not found');
+  return { shareToken: result.rows[0].share_token, shareEnabled: true };
+}
+
+export async function disableRecipeShare(recipeId) {
+  const result = await query(
+    `UPDATE recipes
+     SET share_enabled = FALSE,
+         updated_at = NOW()
+     WHERE id = $1
+     RETURNING id`,
+    [recipeId]
+  );
+  if (!result.rowCount) throw notFound('Recipe not found');
+  return { shareEnabled: false };
+}
+
+export async function getSharedRecipeByToken(token) {
+  const cleanToken = String(token || '').trim();
+  if (!cleanToken) throw notFound('Shared recipe not found');
+
+  const result = await query(
+    `${recipeSelect}
+     WHERE r.share_token = $1 AND r.share_enabled = TRUE
+     GROUP BY r.id`,
+    [cleanToken]
+  );
+
+  const recipe = mapRecipe(result.rows[0]);
+  if (!recipe) throw notFound('Shared recipe not found');
+  return toPublicRecipe(recipe);
 }

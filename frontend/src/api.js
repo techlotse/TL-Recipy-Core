@@ -114,6 +114,15 @@ export const api = {
   async deleteRecipe(id) {
     return request(`/api/recipes/${id}`, { method: 'DELETE', requiresAuth: true });
   },
+  async enableRecipeShare(id) {
+    return request(`/api/recipes/${id}/share`, { method: 'POST', requiresAuth: true });
+  },
+  async disableRecipeShare(id) {
+    return request(`/api/recipes/${id}/share`, { method: 'DELETE', requiresAuth: true });
+  },
+  async getSharedRecipe(token) {
+    return request(`/api/share/${encodeURIComponent(token)}`);
+  },
   async listTags() {
     return request('/api/tags');
   },

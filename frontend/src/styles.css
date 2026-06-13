@@ -1527,3 +1527,155 @@ h3 {
   opacity: 0.5;
   text-decoration: line-through;
 }
+
+/* Share dialog */
+.share-dialog {
+  width: min(100%, 32rem);
+}
+
+.share-link-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.share-link-row input {
+  flex: 1 1 14rem;
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+}
+
+.share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.share-actions .secondary-button,
+.share-actions .ghost-button {
+  text-decoration: none;
+}
+
+/* Public shared recipe page (no app shell) */
+.shared-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: clamp(1rem, 4vw, 3rem);
+  background: var(--tl-bg, #050816);
+}
+
+.shared-card {
+  width: min(100%, 52rem);
+  background: var(--tl-bg-secondary, #0d1326);
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+  border-radius: var(--tl-radius-lg, 18px);
+  padding: clamp(1.25rem, 3vw, 2.5rem);
+  display: grid;
+  gap: 1.1rem;
+}
+
+.shared-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.shared-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.shared-image {
+  border-radius: var(--tl-radius, 14px);
+  overflow: hidden;
+  max-height: 24rem;
+}
+
+.shared-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.shared-lede {
+  color: var(--muted, #9aa4bf);
+}
+
+.shared-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 1.5rem;
+}
+
+@media (max-width: 720px) {
+  .shared-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.shared-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted, #9aa4bf);
+  font-size: 0.85rem;
+  border-top: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+  padding-top: 0.9rem;
+}
+
+/* Print: produce a clean PDF of the shared recipe */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  .shared-page {
+    padding: 0;
+    background: #fff;
+  }
+
+  .shared-card {
+    width: 100%;
+    border: none;
+    border-radius: 0;
+    background: #fff;
+    color: #111;
+    padding: 0;
+  }
+
+  .shared-card h1,
+  .shared-card h2,
+  .shared-card strong {
+    color: #111;
+  }
+
+  .shared-lede,
+  .shared-footer,
+  .shared-card span {
+    color: #333;
+  }
+
+  .shared-grid {
+    grid-template-columns: 1fr 1.4fr;
+  }
+
+  .tag-chip {
+    border: 1px solid #ccc;
+    color: #333;
+  }
+
+  .illustrated-step {
+    break-inside: avoid;
+  }
+}

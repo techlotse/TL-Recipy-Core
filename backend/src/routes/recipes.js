@@ -5,6 +5,8 @@ import {
   addRecipeTranslations,
   createRecipe,
   deleteRecipe,
+  disableRecipeShare,
+  enableRecipeShare,
   getRecipe,
   listRecipes,
   updateRecipe
@@ -56,6 +58,21 @@ recipesRouter.post(
       recipe: await addRecipeTranslations(req.params.id, result.translations, result.llmUsage),
       translatedLanguages: Object.keys(result.translations)
     });
+  })
+);
+
+recipesRouter.post(
+  '/:id/share',
+  asyncHandler(async (req, res) => {
+    // Idempotent: enabling an already-shared recipe returns the same token.
+    res.json(await enableRecipeShare(req.params.id));
+  })
+);
+
+recipesRouter.delete(
+  '/:id/share',
+  asyncHandler(async (req, res) => {
+    res.json(await disableRecipeShare(req.params.id));
   })
 );
 

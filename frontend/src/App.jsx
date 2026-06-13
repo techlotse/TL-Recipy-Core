@@ -6,6 +6,7 @@ import {
   ChevronDown,
   Check,
   Clock3,
+  Copy,
   DatabaseBackup,
   Download,
   Gauge,
@@ -16,9 +17,11 @@ import {
   Link as LinkIcon,
   Loader2,
   Plus,
+  Printer,
   Save,
   Search,
   ServerCog,
+  Share2,
   Settings,
   ShieldCheck,
   Tags,
@@ -92,7 +95,19 @@ const EN_MESSAGES = {
   generateMissingTranslations: 'Generate missing translations',
   translationMissing: 'This recipe is not translated to the selected language yet.',
   importPhotos: 'Import photos',
-  importPhotosHint: 'This recipe was imported from these photos.'
+  importPhotosHint: 'This recipe was imported from these photos.',
+  share: 'Share',
+  shareRecipe: 'Share this recipe',
+  shareHint: 'Anyone with this link can view just this recipe — not the rest of your library.',
+  copyLink: 'Copy link',
+  linkCopied: 'Link copied',
+  shareViaApps: 'Share…',
+  saveAsPdf: 'Save as PDF',
+  stopSharing: 'Stop sharing',
+  openSharedView: 'Open shared view',
+  sharedRecipe: 'Shared recipe',
+  sharedRecipeMissing: 'This shared recipe is no longer available.',
+  recipeBy: 'Recipe'
 };
 
 const I18nContext = createContext({
@@ -154,7 +169,19 @@ const MESSAGES = {
     generateMissingTranslations: 'Fehlende Übersetzungen erstellen',
     translationMissing: 'Dieses Rezept ist noch nicht in die ausgewählte Sprache übersetzt.',
     importPhotos: 'Importfotos',
-    importPhotosHint: 'Dieses Rezept wurde aus diesen Fotos importiert.'
+    importPhotosHint: 'Dieses Rezept wurde aus diesen Fotos importiert.',
+    share: 'Teilen',
+    shareRecipe: 'Dieses Rezept teilen',
+    shareHint: 'Wer den Link hat, sieht nur dieses Rezept — nicht den Rest deiner Sammlung.',
+    copyLink: 'Link kopieren',
+    linkCopied: 'Link kopiert',
+    shareViaApps: 'Teilen…',
+    saveAsPdf: 'Als PDF speichern',
+    stopSharing: 'Teilen beenden',
+    openSharedView: 'Geteilte Ansicht öffnen',
+    sharedRecipe: 'Geteiltes Rezept',
+    sharedRecipeMissing: 'Dieses geteilte Rezept ist nicht mehr verfügbar.',
+    recipeBy: 'Rezept'
   },
   af: {
     recipes: 'Resepte',
@@ -206,7 +233,19 @@ const MESSAGES = {
     generateMissingTranslations: 'Skep ontbrekende vertalings',
     translationMissing: 'Hierdie resep is nog nie in die gekose taal vertaal nie.',
     importPhotos: "Invoerfoto's",
-    importPhotosHint: "Hierdie resep is vanaf hierdie foto's ingevoer."
+    importPhotosHint: "Hierdie resep is vanaf hierdie foto's ingevoer.",
+    share: 'Deel',
+    shareRecipe: 'Deel hierdie resep',
+    shareHint: 'Enigeen met hierdie skakel sien net hierdie resep — nie die res van jou versameling nie.',
+    copyLink: 'Kopieer skakel',
+    linkCopied: 'Skakel gekopieer',
+    shareViaApps: 'Deel…',
+    saveAsPdf: 'Stoor as PDF',
+    stopSharing: 'Hou op deel',
+    openSharedView: 'Open gedeelde aansig',
+    sharedRecipe: 'Gedeelde resep',
+    sharedRecipeMissing: 'Hierdie gedeelde resep is nie meer beskikbaar nie.',
+    recipeBy: 'Resep'
   }
 };
 
@@ -308,6 +347,10 @@ function getRoute() {
 
 function navigate(path) {
   window.location.hash = path;
+}
+
+function buildShareUrl(token) {
+  return `${window.location.origin}/#/share/${token}`;
 }
 
 function useRoute() {
@@ -788,6 +831,12 @@ function RecipeDetailPage({ id }) {
   const [error, setError] = useState('');
   const [translationError, setTranslationError] = useState('');
   const [enlargedPhoto, setEnlargedPhoto] = useState(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
+  const [shareEnabled, setShareEnabled] = useState(false);
+  const [shareBusy, setShareBusy] = useState(false);
+  const [shareError, setShareError] = useState('');
+  const [shareCopied, setShareCopied] = useState(false);
   const [checkedIngredients, setCheckedIngredients] = useState(() => new Set());
   const [completedSteps, setCompletedSteps] = useState(() => new Set());
 
@@ -798,7 +847,11 @@ function RecipeDetailPage({ id }) {
     setCompletedSteps(new Set());
     api
       .getRecipe(id)
-      .then((payload) => active && setRecipe(payload.recipe))
+      .then((payload) => {
+        if (!active) return;
+        setRecipe(payload.recipe);
+        setShareEnabled(Boolean(payload.recipe?.shareEnabled));
+      })
       .catch((err) => active && setError(err.message))
       .finally(() => active && setLoading(false));
     return () => {
@@ -813,6 +866,57 @@ function RecipeDetailPage({ id }) {
       else next.add(index);
       return next;
     });
+  }
+
+  async function openShare() {
+    setShareOpen(true);
+    setShareError('');
+    setShareCopied(false);
+    if (shareUrl) return;
+    setShareBusy(true);
+    try {
+      const payload = await api.enableRecipeShare(id);
+      setShareUrl(buildShareUrl(payload.shareToken));
+      setShareEnabled(true);
+    } catch (err) {
+      setShareError(err.message);
+    } finally {
+      setShareBusy(false);
+    }
+  }
+
+  async function copyShareLink() {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareCopied(true);
+      window.setTimeout(() => setShareCopied(false), 2000);
+    } catch {
+      setShareError('Could not copy the link. Select and copy it manually.');
+    }
+  }
+
+  async function nativeShare() {
+    if (!navigator.share) return;
+    try {
+      await navigator.share({ title: recipe.title, url: shareUrl });
+    } catch {
+      // User dismissed the share sheet — nothing to do.
+    }
+  }
+
+  async function stopSharing() {
+    setShareBusy(true);
+    setShareError('');
+    try {
+      await api.disableRecipeShare(id);
+      setShareEnabled(false);
+      setShareUrl('');
+      setShareOpen(false);
+    } catch (err) {
+      setShareError(err.message);
+    } finally {
+      setShareBusy(false);
+    }
   }
 
   async function handleDelete() {
@@ -867,6 +971,10 @@ function RecipeDetailPage({ id }) {
           {t('recipes')}
         </button>
         <div className="header-actions">
+          <button className="secondary-button" type="button" onClick={openShare}>
+            <Share2 size={18} />
+            {t('share')}
+          </button>
           <button className="secondary-button" type="button" onClick={() => navigate(`/recipes/${recipe.id}/edit`)}>
             <Settings size={18} />
             {t('edit')}
@@ -996,6 +1104,60 @@ function RecipeDetailPage({ id }) {
       )}
 
       <LlmUsageCard usage={recipe.llmUsage} />
+
+      {shareOpen && (
+        <div className="auth-overlay" onClick={() => setShareOpen(false)}>
+          <div
+            className="auth-dialog share-dialog"
+            role="dialog"
+            aria-modal="true"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button className="icon-button auth-close" type="button" title="Close" onClick={() => setShareOpen(false)}>
+              <X size={17} />
+            </button>
+            <div className="auth-dialog-icon">
+              <Share2 size={24} />
+            </div>
+            <p className="eyebrow">{t('share')}</p>
+            <h2>{t('shareRecipe')}</h2>
+            <p>{t('shareHint')}</p>
+            {shareBusy && !shareUrl ? (
+              <div className="state">
+                <Loader2 className="spin" size={18} />
+                Loading
+              </div>
+            ) : shareUrl ? (
+              <>
+                <div className="share-link-row">
+                  <input readOnly value={shareUrl} onFocus={(event) => event.target.select()} />
+                  <button className="secondary-button" type="button" onClick={copyShareLink}>
+                    {shareCopied ? <Check size={18} /> : <Copy size={18} />}
+                    {shareCopied ? t('linkCopied') : t('copyLink')}
+                  </button>
+                </div>
+                <div className="share-actions">
+                  {typeof navigator !== 'undefined' && navigator.share && (
+                    <button className="secondary-button" type="button" onClick={nativeShare}>
+                      <Share2 size={18} />
+                      {t('shareViaApps')}
+                    </button>
+                  )}
+                  <a className="secondary-button" href={shareUrl} target="_blank" rel="noreferrer">
+                    <Printer size={18} />
+                    {t('saveAsPdf')}
+                  </a>
+                  <button className="ghost-button" type="button" onClick={stopSharing} disabled={shareBusy}>
+                    <X size={18} />
+                    {t('stopSharing')}
+                  </button>
+                </div>
+              </>
+            ) : null}
+            {shareError && <div className="state error compact">{shareError}</div>}
+          </div>
+        </div>
+      )}
 
       {enlargedPhoto && (
         <div className="photo-lightbox" role="dialog" aria-modal="true" onClick={() => setEnlargedPhoto(null)}>
@@ -2237,6 +2399,122 @@ function SaasManagementPage() {
   );
 }
 
+function SharedRecipePage({ token }) {
+  const { preferences, t } = useI18n();
+  const [recipe, setRecipe] = useState(null);
+  const [language, setLanguage] = useState('original');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    api
+      .getSharedRecipe(token)
+      .then((payload) => active && setRecipe(payload.recipe))
+      .catch((err) => active && setError(err.message))
+      .finally(() => active && setLoading(false));
+    return () => {
+      active = false;
+    };
+  }, [token]);
+
+  if (loading || error || !recipe) {
+    return (
+      <div className="shared-page">
+        <div className="shared-card">
+          <StatusMessage loading={loading} error={error} empty={!recipe && !loading && !error} emptyText={t('sharedRecipeMissing')} />
+        </div>
+      </div>
+    );
+  }
+
+  const shownRecipe = displayRecipe(recipe, language);
+  const shownTags = translatedTags(recipe, language);
+  const availableLanguages = languageOptions(preferences).filter((option) => recipe.translations?.[option.code]);
+
+  return (
+    <div className="shared-page">
+      <div className="shared-card">
+        <div className="shared-toolbar no-print">
+          <span className="brand-mark">TL</span>
+          <div className="shared-toolbar-actions">
+            {availableLanguages.length > 0 && (
+              <select value={language} onChange={(event) => setLanguage(event.target.value)}>
+                <option value="original">{t('originalRecipe')}</option>
+                {availableLanguages.map((option) => (
+                  <option value={option.code} key={option.code}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            )}
+            <button className="primary-button" type="button" onClick={() => window.print()}>
+              <Printer size={18} />
+              {t('saveAsPdf')}
+            </button>
+          </div>
+        </div>
+
+        {recipe.imageUrl && (
+          <div className="shared-image">
+            <img src={recipe.imageUrl} alt="" />
+          </div>
+        )}
+
+        <p className="eyebrow">{t('sharedRecipe')}</p>
+        <h1>{shownRecipe.title}</h1>
+        {shownRecipe.shortDescription && <p className="shared-lede">{shownRecipe.shortDescription}</p>}
+        <TimeMeta recipe={recipe} />
+        {shownTags.length > 0 && (
+          <div className="tag-row">
+            {shownTags.map((tag) => (
+              <span className="tag-chip" key={tag}>
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="shared-grid">
+          <section className="content-block">
+            <h2>{t('ingredients')}</h2>
+            <ul className="ingredient-list">
+              {shownRecipe.ingredients.map((ingredient, index) => (
+                <li key={`${ingredient.name}-${index}`}>
+                  <strong>
+                    {[ingredient.quantity, ingredient.unit].filter(Boolean).join(' ')}
+                    {ingredient.quantity || ingredient.unit ? ' ' : ''}
+                    {ingredient.name}
+                  </strong>
+                  {ingredient.notes && <span>{ingredient.notes}</span>}
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section className="content-block">
+            <h2>{t('method')}</h2>
+            <ol className="step-list">
+              {shownRecipe.steps.map((step, index) => (
+                <li className={step.imageUrl ? 'illustrated-step' : ''} key={`${step.text}-${index}`}>
+                  {step.imageUrl && <img src={step.imageUrl} alt="" />}
+                  <span>{step.text}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
+        </div>
+
+        <footer className="shared-footer">
+          <span className="brand-mark">TL</span>
+          <span>TL Recipe Core</span>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const route = useRoute();
   // Keep the screen awake while cooking when the app runs as an installed webapp.
@@ -2251,8 +2529,9 @@ export default function App() {
     supportedLanguages: FALLBACK_LANGUAGE_OPTIONS,
     categoryFilters: []
   });
-  const editMatch = route.match(/^\/recipes\/(.+)\/edit$/);
-  const recipeMatch = editMatch ? null : route.match(/^\/recipes\/(.+)$/);
+  const shareMatch = route.match(/^\/share\/(.+)$/);
+  const editMatch = shareMatch ? null : route.match(/^\/recipes\/(.+)\/edit$/);
+  const recipeMatch = shareMatch || editMatch ? null : route.match(/^\/recipes\/(.+)$/);
 
   useLayoutEffect(() => {
     configureAuth({
@@ -2312,6 +2591,14 @@ export default function App() {
     authHeaderRef.current = '';
     setAuthHeader('');
     storeAuthHeader('');
+  }
+
+  if (shareMatch) {
+    return (
+      <I18nContext.Provider value={i18nValue}>
+        <SharedRecipePage token={decodeURIComponent(shareMatch[1])} />
+      </I18nContext.Provider>
+    );
   }
 
   let page;
