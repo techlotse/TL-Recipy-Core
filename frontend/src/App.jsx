@@ -131,7 +131,9 @@ const EN_MESSAGES = {
   fiber: 'Fiber',
   sugar: 'Sugar',
   sodium: 'Sodium',
-  nutritionDisclaimer: 'Estimated values — for general guidance only, not medical or dietary advice.'
+  nutritionDisclaimer: 'Estimated values — for general guidance only, not medical or dietary advice.',
+  macroSplit: 'Protein / fat / carbs',
+  macroSplitEmpty: 'Not enough data for a macro split.'
 };
 
 const I18nContext = createContext({
@@ -229,7 +231,9 @@ const MESSAGES = {
     fiber: 'Ballaststoffe',
     sugar: 'Zucker',
     sodium: 'Natrium',
-    nutritionDisclaimer: 'Geschätzte Werte — nur zur allgemeinen Orientierung, keine medizinische oder Ernährungsberatung.'
+    nutritionDisclaimer: 'Geschätzte Werte — nur zur allgemeinen Orientierung, keine medizinische oder Ernährungsberatung.',
+    macroSplit: 'Eiweiß / Fett / Kohlenhydrate',
+    macroSplitEmpty: 'Nicht genug Daten für eine Makro-Aufteilung.'
   },
   af: {
     recipes: 'Resepte',
@@ -317,7 +321,9 @@ const MESSAGES = {
     fiber: 'Vesel',
     sugar: 'Suiker',
     sodium: 'Natrium',
-    nutritionDisclaimer: 'Geskatte waardes — slegs vir algemene riglyne, nie mediese of dieetadvies nie.'
+    nutritionDisclaimer: 'Geskatte waardes — slegs vir algemene riglyne, nie mediese of dieetadvies nie.',
+    macroSplit: 'Proteïen / vet / koolhidrate',
+    macroSplitEmpty: 'Nie genoeg data vir \'n makro-verdeling nie.'
   }
 };
 
@@ -667,6 +673,72 @@ function nutritionRow(value, unit) {
   return `${numberLabel(value)}${unit}`;
 }
 
+const MACRO_COLORS = { protein: '#f59e0b', fat: '#a78bfa', carbs: '#38bdf8' };
+
+function polarToXY(cx, cy, radius, angleDeg) {
+  const rad = (angleDeg * Math.PI) / 180;
+  return [cx + radius * Math.cos(rad), cy + radius * Math.sin(rad)];
+}
+
+// Inline SVG pie of the protein/fat/carbs mix by mass. No chart dependency so
+// it renders identically on screen and in the shared-recipe PDF.
+function MacroPie({ macros }) {
+  const { t } = useI18n();
+  const slices = [
+    { key: 'protein', label: t('protein'), value: macros.protein || 0, color: MACRO_COLORS.protein },
+    { key: 'fat', label: t('fat'), value: macros.fat || 0, color: MACRO_COLORS.fat },
+    { key: 'carbs', label: t('carbs'), value: macros.carbs || 0, color: MACRO_COLORS.carbs }
+  ].filter((slice) => slice.value > 0);
+
+  const total = slices.reduce((sum, slice) => sum + slice.value, 0);
+  if (!total) {
+    return <p className="muted-note macro-empty">{t('macroSplitEmpty')}</p>;
+  }
+
+  const cx = 60;
+  const cy = 60;
+  const radius = 54;
+  const withPct = slices.map((slice) => ({ ...slice, pct: Math.round((slice.value / total) * 100) }));
+
+  let cursor = -90;
+  const shapes = withPct.map((slice) => {
+    if (withPct.length === 1) {
+      return (
+        <circle key={slice.key} cx={cx} cy={cy} r={radius} fill={slice.color} />
+      );
+    }
+    const sweep = (slice.value / total) * 360;
+    const start = cursor;
+    const end = cursor + sweep;
+    cursor = end;
+    const [x1, y1] = polarToXY(cx, cy, radius, start);
+    const [x2, y2] = polarToXY(cx, cy, radius, end);
+    const largeArc = sweep > 180 ? 1 : 0;
+    const d = `M ${cx} ${cy} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${radius} ${radius} 0 ${largeArc} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`;
+    return <path key={slice.key} d={d} fill={slice.color} />;
+  });
+
+  return (
+    <div className="nutrition-chart">
+      <p className="macro-title">{t('macroSplit')}</p>
+      <svg viewBox="0 0 120 120" className="macro-pie" role="img" aria-label={t('macroSplit')}>
+        {shapes}
+      </svg>
+      <ul className="macro-legend">
+        {withPct.map((slice) => (
+          <li key={slice.key}>
+            <span className="macro-dot" style={{ background: slice.color }} />
+            <span className="macro-legend-label">{slice.label}</span>
+            <span className="macro-legend-value">
+              {numberLabel(slice.value)} g · {slice.pct}%
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function NutritionCard({ nutrition }) {
   const { t } = useI18n();
   if (!nutrition) return null;
@@ -682,6 +754,16 @@ function NutritionCard({ nutrition }) {
   ];
   const perServing = nutrition.perServing || {};
   const total = nutrition.total || {};
+  const macroBase = [perServing.proteinGrams, perServing.fatGrams, perServing.carbsGrams].some(
+    (value) => value !== null && value !== undefined
+  )
+    ? perServing
+    : total;
+  const macros = {
+    protein: macroBase.proteinGrams,
+    fat: macroBase.fatGrams,
+    carbs: macroBase.carbsGrams
+  };
 
   return (
     <div className="nutrition-card">
@@ -690,19 +772,22 @@ function NutritionCard({ nutrition }) {
           {t('servingsLabel')}: {numberLabel(nutrition.servings)}
         </p>
       ) : null}
-      <div className="nutrition-table">
-        <div className="nutrition-table-header">
-          <span>{t('nutrition')}</span>
-          <span>{t('perServing')}</span>
-          <span>{t('wholeRecipe')}</span>
-        </div>
-        {rows.map((row) => (
-          <div className="nutrition-table-row" key={row.key}>
-            <span>{row.label}</span>
-            <span>{nutritionRow(perServing[row.key], row.unit)}</span>
-            <span>{nutritionRow(total[row.key], row.unit)}</span>
+      <div className="nutrition-body">
+        <div className="nutrition-table">
+          <div className="nutrition-table-header">
+            <span>{t('nutrition')}</span>
+            <span>{t('perServing')}</span>
+            <span>{t('wholeRecipe')}</span>
           </div>
-        ))}
+          {rows.map((row) => (
+            <div className="nutrition-table-row" key={row.key}>
+              <span>{row.label}</span>
+              <span>{nutritionRow(perServing[row.key], row.unit)}</span>
+              <span>{nutritionRow(total[row.key], row.unit)}</span>
+            </div>
+          ))}
+        </div>
+        <MacroPie macros={macros} />
       </div>
     </div>
   );

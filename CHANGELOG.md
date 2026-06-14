@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.8.1
+
+- Added a protein/fat/carbs pie chart to the right of the nutrition block, showing the macronutrient mix by mass with a percentage legend. Rendered as inline SVG (no chart dependency), so it also appears when saving/printing a recipe.
+
 ## v0.8.0
 
 - Added recipe nutrition estimates (issue #7, v1): a "Calculate nutrition" action on each recipe estimates calories, protein, carbs, fat, fiber, sugar, and sodium per serving and for the whole recipe, with the assumed serving count. Values are AI-estimated from the final ingredient list and shown with a clear "estimate only, not medical/dietary advice" disclaimer. Stored on the recipe and recalculable. (v2 healthy-balance assessment remains future work.)
